@@ -1,20 +1,52 @@
-import React from 'react'; // Trae las herramientas de React.
-import { createNativeStackNavigator } from '@react-navigation/native-stack'; // Trae el sistema de "pilas" (una pantalla sobre otra).
+import React from 'react';
+// Importamos la función para crear el stack de navegación nativo.
+// "Native Stack" utiliza las transiciones de pantalla optimizadas de iOS y Android.
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Importamos tus diseños de pantalla
+// Importamos las pantallas que formarán parte de este flujo de autenticación.
+// Asegúrate de que las rutas de los archivos sean correctas según tu carpeta.
 import LoginScreen from '../screens/auth/LoginScreen';
-import SignUpScreen from '../screens/auth/SignUpScreen';
+import SignUpScreen from '../screens/auth/SignupScreen';
 
-const Stack = createNativeStackNavigator(); // Crea el objeto "Stack". Imaginalo como una pila de cartas.
+// 1. Inicializamos el Stack. 
+// Esto nos devuelve dos componentes: Navigator y Screen.
+const Stack = createNativeStackNavigator();
 
+/**
+ * AuthNavigator:
+ * Este componente define el "mapa" de las pantallas que verá un usuario
+ * que aún no ha iniciado sesión.
+ */
 export default function AuthNavigator() {
     return (
-        // Stack.Navigator es el contenedor que decide las reglas (ej: no mostrar encabezado)
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        /* 2. El contenedor principal del Stack.
+           - initialRouteName: Define qué pantalla se ve primero al abrir este flujo.
+           - screenOptions: Configuraciones globales para todas las pantallas del stack.
+             headerShown: false -> Quitamos la barra superior blanca que pone Android/iOS por defecto,
+             ya que nosotros diseñaremos nuestro propio encabezado en Figma.
+        */
+        <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={{
+                headerShown: false,
+                animation: 'slide_from_right', // Animación moderna de deslizamiento
+                contentStyle: { backgroundColor: '#000' }
+            }}
+        >
 
-            {/* Stack.Screen define cada "carta" de la pila. El 'name' es como la llamarás después */}
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={SignUpScreen} />
+            {/* 3. Definición de cada pantalla (Carta en la pila).
+               - name: Es el "apodo" único de la ruta. Es lo que usas en navigation.navigate('Nombre').
+               - component: Es el archivo de React que se va a renderizar.
+            */}
+            <Stack.Screen
+                name="Login"
+                component={LoginScreen}
+            />
+
+            <Stack.Screen
+                name="Signup"
+                component={SignUpScreen}
+            />
 
         </Stack.Navigator>
     );

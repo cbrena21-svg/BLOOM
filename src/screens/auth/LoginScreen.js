@@ -1,78 +1,236 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Colors } from '../../styles/colors'; // Usando tus colores
-import { signUp } from '../../services/authService';
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    TextInput,
+    Alert,
+    ScrollView,
+    ActivityIndicator
+} from 'react-native';
+
+// Importamos tus herramientas globales
+import { Colors } from '../../styles/colors';
+import { useAuth } from '../../hooks/useAuth';
+import { login } from '../../services/authService'; // Usamos la función de login
 
 export default function LoginScreen({ navigation }) {
-    const pruebaRegistro = async () => {
-        console.log("Probando conexión...");
-        const resultado = await signUp("test_bloom@gmail.com", "123456");
+    // 1. Estados: Solo necesitamos Email y Password
+    const { loginConGoogle, isReady } = useAuth();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-        if (resultado.user) {
-            Alert.alert("✅ Éxito", "¡Usuario creado en Firebase!");
-            console.log("Usuario:", resultado.user.email);
-        } else {
-            Alert.alert("❌ Error", resultado.error);
-            console.log("Error:", resultado.error);
+    // 2. Lógica de Login con Email (Usando tu servicio Pro)
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Campos incompletos', 'Por favor, ingresa tu correo y contraseña.');
+            return;
         }
+
+        setLoading(true);
+        const respuesta = await login(email, password);
+
+        if (respuesta.success) {
+            // El RootNavigator detectará al usuario y nos mandará al Home
+            console.log("Sesión iniciada correctamente");
+        } else {
+            // Muestra el error traducido (ej: "Correo o contraseña incorrectos")
+            Alert.alert('Error de acceso', respuesta.error);
+        }
+        setLoading(false);
+    };
+
+    // 3. Lógica de Google (Reutilizamos la misma lógica)
+    const handleGooglePress = async () => {
+        setLoading(true);
+        const resultado = await loginConGoogle();
+        if (resultado.error && resultado.error !== "Inicio de sesión cancelado") {
+            Alert.alert("Error con Google", resultado.error);
+        }
+        setLoading(false);
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Bloom</Text>
+        <ScrollView contentContainerStyle={styles.container} bounces={false}>
+            {/* Fondo y Logo igual al SignUp */}
+            <Image
+                source={require('../../../assets/images/CircleLayer.png')}
+                style={styles.blurBackground}
+            />
+            <Image
+                source={require('../../../assets/icons/Group_35.png')}
+                style={styles.LogoPrincipal}
+                resizeMode="contain"
+            />
 
-            <View style={styles.card}>
-                <Text style={styles.subtitle}>Bienvenida a tu espacio</Text>
+            <Text style={styles.title}>Bienvenida de nuevo</Text>
+            <Text style={styles.text}>Retoma tu equilibrio</Text>
 
-                <TouchableOpacity style={styles.button} onPress={pruebaRegistro}>
-                    <Text style={styles.buttonText}>Probar Registro (Firebase)</Text>
-                </TouchableOpacity>
+            {/* Formulario de Inicio de Sesión */}
+            <TextInput
+                placeholder="Correo electrónico"
+                style={styles.input}
+                placeholderTextColor={Colors.textoSecundario}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+            />
+            <TextInput
+                placeholder="Contraseña"
+                style={styles.input}
+                placeholderTextColor={Colors.textoSecundario}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+            />
 
-                {/* Botón de prueba para navegar a Registro */}
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => navigation.navigate('Register')}
-                >
-                    <Text style={styles.buttonText}>Ir a Registro</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+            {/* Enlace de Olvidé mi contraseña */}
+            <TouchableOpacity
+                onPress={() => Alert.alert("Próximamente", "Función de recuperación en desarrollo")}
+                style={styles.forgotContainer}
+            >
+                <Text style={styles.forgotText}>¿Has olvidado tu contraseña?</Text>
+            </TouchableOpacity>
+
+            {/* Botón de Google */}
+            <TouchableOpacity
+                style={styles.googleButton}
+                onPress={handleGooglePress}
+                disabled={!isReady || loading}
+            >
+                <Image
+                    source={require('../../../assets/icons/GoogleIcon.png')}
+                    style={styles.GoogleIcon}
+                    resizeMode="contain"
+                />
+                <Text style={styles.googleButtonText}>Iniciar sesión con Google</Text>
+            </TouchableOpacity>
+
+            {/* Enlace para ir al Registro */}
+            <TouchableOpacity
+                onPress={() => navigation.navigate('Signup')}
+                style={styles.linkContainer}
+            >
+                <Text style={styles.textNormal}>¿No tienes cuenta?
+                    <Text style={styles.textLink}> Regístrate</Text>
+                </Text>
+            </TouchableOpacity>
+
+            {/* Botón Principal de Iniciar Sesión */}
+            <TouchableOpacity
+                style={styles.loginButton}
+                onPress={handleLogin}
+                disabled={loading}
+            >
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.loginButtonText}>INICIAR SESIÓN</Text>
+                )}
+            </TouchableOpacity>
+        </ScrollView>
     );
 }
 
+// Mismos estilos que SignUp para consistencia total
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: Colors.fondo, // Tu color de fondo
+        backgroundColor: Colors.fondo,
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    blurBackground: {
+        position: 'absolute',
+        top: -10,
+        right: -30,
+        width: 280,
+        height: 280,
+        zIndex: -1,
+    },
+    LogoPrincipal: {
+        width: 280,
+        height: 130,
+        marginTop: 40,
+    },
+    title: {
+        fontSize: 22,
+        color: Colors.textoPrincipal,
+        fontWeight: 'bold',
+        marginBottom: 5
+    },
+    text: {
+        color: Colors.textoSecundario,
+        marginBottom: 30,
+        fontSize: 16,
+    },
+    input: {
+        backgroundColor: Colors.tarjetas,
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 15,
+        width: '90%',
+        color: Colors.textoPrincipal,
+    },
+    forgotContainer: {
+        alignSelf: 'flex-end',
+        marginRight: '5%',
+        marginBottom: 20,
+    },
+    forgotText: {
+        color: Colors.textoSecundario,
+        fontSize: 13,
+        textDecorationLine: 'underline',
+    },
+    googleButton: {
+        width: '90%',
+        backgroundColor: Colors.tarjetas,
+        padding: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
+        borderRadius: 50,
+        marginTop: 10,
+    },
+    GoogleIcon: {
+        width: 24,
+        height: 24,
+        marginRight: 10,
+    },
+    googleButtonText: {
+        color: "#fff",
+        fontSize: 14,
+    },
+    loginButton: {
+        width: '60%',
+        marginTop: 10,
+        marginBottom: 40,
+        backgroundColor: Colors.botones,
+        borderRadius: 50,
+        padding: 18,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    title: {
-        fontSize: 42,
-        color: Colors.botones, // Tu color lavanda
+    loginButtonText: {
+        color: '#fff',
+        fontSize: 14,
         fontWeight: 'bold',
-        marginBottom: 20,
     },
-    card: {
-        backgroundColor: 'rgba(255,255,255,0.05)', // Un toque de transparencia
-        padding: 30,
-        borderRadius: 20,
-        width: '80%',
-        alignItems: 'center',
-    },
-    subtitle: {
-        color: Colors.texto,
-        marginBottom: 20,
-    },
-    button: {
-        backgroundColor: Colors.botones,
+    linkContainer: {
         padding: 15,
-        borderRadius: 10,
-        width: '100%',
-        alignItems: 'center',
     },
-    buttonText: {
-        color: Colors.fondo,
+    textNormal: {
+        color: "#fff",
+        fontSize: 13,
+    },
+    textLink: {
+        color: Colors.folicular || '#FFC0CB',
         fontWeight: 'bold',
-    }
+        textDecorationLine: 'underline',
+    },
 });

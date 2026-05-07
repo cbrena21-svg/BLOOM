@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
     apiKey: "AIzaSyDCMK9Y9Scry8bWZEKlIljJsbohUUDCIaA",
@@ -12,18 +12,26 @@ const firebaseConfig = {
     measurementId: "G-F8P5YVZR29"
 };
 
-// Inicializamos Firebase
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+// 1. Inicializamos la App (Lógica limpia)
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
+// 2. Inicializamos Auth con PERSISTENCIA 
+// Usamos un let para poder definirlo según la condición
 let auth;
+
+/**
+ * ¿Por qué hacemos esto?
+ * Si la app ya tiene una instancia de Auth (por un recargo de código), la usamos.
+ * Si no tiene ninguna, la inicializamos con AsyncStorage para que la sesión sea eterna.
+ */
 if (getApps().length > 0) {
-    try {
-        auth = getAuth(app);
-    } catch (e) {
-        auth = initializeAuth(app, {
-            persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-        });
-    }
+    // Si la app ya existía, intentamos obtener el Auth ya configurado
+    auth = getAuth(app);
+} else {
+    // Si es la primera vez que arranca, configuramos la persistencia móvil
+    auth = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage)
+    });
 }
 
-export { auth };
+export { app, auth };

@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "BloomFront",
-    "slug": "BloomFront",
+    "name": "BLOOM",
+    "slug": "BLOOM",
     "version": "1.0.0",
+    "scheme": "bloom",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

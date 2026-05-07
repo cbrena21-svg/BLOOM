@@ -3,44 +3,83 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    updateProfile
 } from 'firebase/auth';
+/**
+ * authService:
+ * Este archivo centraliza todas las peticiones a Firebase Auth.
+ * Retornamos objetos { success: true/false, error: string } para que 
+ * las pantallas solo tengan que leer el resultado.
+ */
 
-export const signUp = async (email, password) => {
+// 1. REGISTRO DE NUEVA CUENTA
+export const signUp = async (email, password, username) => {
     try {
-        const res = await createUserWithEmailAndPassword(auth, email, password);
-        return { user: res.user, error: null };
+        // Paso A: Crear el usuario con correo y contraseña
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Paso B: Guardar el "Nombre de Usuario" en el perfil de Firebase
+        // Firebase por defecto solo guarda el email, así que usamos updateProfile.
+        await updateProfile(user, {
+            displayName: username
+        });
+
+        return { success: true, user: user };
     } catch (error) {
-        let msg = "Error al registrarse.";
-        if (error.code === 'auth/email-already-in-use') msg = "El correo ya existe.";
-        if (error.code === 'auth/weak-password') msg = "Contraseña muy débil";
-        return { user: null, error: msg };
+        return { success: false, error: traducirError(error.code) };
     }
 };
 
+// 2. INICIO DE SESIÓN
 export const login = async (email, password) => {
     try {
-        const res = await signInWithEmailAndPassword(auth, email, password);
-        return { user: res.user, error: null };
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        return { success: true, user: userCredential.user };
     } catch (error) {
-        return { user: null, error: "Correo o contraseña incorrectos." };
+        return { success: false, error: traducirError(error.code) };
     }
 };
 
+// 3. CERRAR SESIÓN
 export const logout = async () => {
     try {
         await signOut(auth);
         return { success: true };
     } catch (error) {
-        return { success: false };
+        return { success: false, error: "No se pudo cerrar la sesión" };
     }
 };
 
+// 4. RECUPERAR CONTRASEÑA
 export const resetPassword = async (email) => {
     try {
         await sendPasswordResetEmail(auth, email);
-        return { success: true, error: null };
+        return { success: true };
     } catch (error) {
-        return { success: false, error: "Error al enviar correo." };
+        return { success: false, error: traducirError(error.code) };
+    }
+};
+
+/**
+ * FUNCIÓN AUXILIAR: traducirError
+ * Firebase devuelve códigos técnicos como 'auth/invalid-email'.
+ * Esta función los convierte en mensajes humanos y bonitos para Bloom.
+ */
+const traducirError = (errorCode) => {
+    switch (errorCode) {
+        case 'auth/email-already-in-use':
+            return "Este correo ya está registrado.";
+        case 'auth/invalid-email':
+            return "El formato del correo no es válido.";
+        case 'auth/weak-password':
+            return "La contraseña es muy débil (mínimo 6 caracteres).";
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            return "Correo o contraseña incorrectos.";
+        default:
+            return "Ocurrió un error inesperado. Inténtalo de nuevo.";
     }
 };

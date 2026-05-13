@@ -90,7 +90,7 @@ export default function LoginScreen({ navigation }) {
 
             {/* Enlace de Olvidé mi contraseña */}
             <TouchableOpacity
-                onPress={() => Alert.alert("Próximamente", "Función de recuperación en desarrollo")}
+                onPress={() => navigation.navigate('ForgotPassword')}
                 style={styles.forgotContainer}
             >
                 <Text style={styles.forgotText}>¿Has olvidado tu contraseña?</Text>

@@ -70,6 +70,7 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.text}>Retoma tu equilibrio</Text>
 
             {/* Formulario de Inicio de Sesión */}
+            <View style = {styles.formContainer}>
             <TextInput
                 placeholder="Correo electrónico"
                 style={styles.input}
@@ -95,6 +96,7 @@ export default function LoginScreen({ navigation }) {
             >
                 <Text style={styles.forgotText}>¿Has olvidado tu contraseña?</Text>
             </TouchableOpacity>
+            </View>
 
             {/* Botón de Google */}
             <TouchableOpacity
@@ -169,6 +171,12 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         fontSize: 16,
     },
+        formContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 20,
+        marginTop: 10,
+    },
     input: {
         backgroundColor: Colors.tarjetas,
         borderRadius: 10,
@@ -176,6 +184,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         width: '90%',
         color: Colors.textoPrincipal,
+        marginTop: 10,
     },
     forgotContainer: {
         alignSelf: 'flex-end',

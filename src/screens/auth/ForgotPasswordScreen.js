@@ -4,32 +4,35 @@ import { useNavigation } from '@react-navigation/native';
 import { resetPassword } from '../../services/authService';
 import { Colors } from '../../styles/colors';
 
-
 export default function ForgotPasswordScreen() {
     const navigation = useNavigation();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Lógica combinada e integrada
     const handleForgotPassword = async () => {
         if (!email) {
-            Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
+            Alert.alert("Error", "Por favor, escribe tu correo electrónico.");
             return;
         }
+
         setLoading(true);
-        try {
-            const resultado = await resetPassword(email);
+        
+        // Llamamos a la función del servicio
+        const resultado = await resetPassword(email);
+        
+        setLoading(false);
 
-            if (!resultado.success) {
-                Alert.alert('Error', resultado.error || 'Ocurrió un error al solicitar el restablecimiento de contraseña');
-                return;
-            }
-
-            Alert.alert('Éxito', 'Se ha enviado un correo para restablecer tu contraseña');
-            navigation.navigate('Login');
-        } catch (error) {
-            Alert.alert('Error', error.message || 'Ocurrió un error al solicitar el restablecimiento de contraseña');
-        } finally {
-            setLoading(false);
+        if (resultado.success) {
+            // Usamos la alerta con el botón de "OK" para regresar al Login
+            Alert.alert(
+                "¡Correo enviado!", 
+                "Revisa tu bandeja de entrada para restablecer tu contraseña.",
+                [{ text: "OK", onPress: () => navigation.goBack() }] // Regresa al Login automáticamente
+            );
+        } else {
+            // Aquí se muestra el error traducido (ej: "Usuario no encontrado")
+            Alert.alert("Error", resultado.error || 'Ocurrió un error al solicitar el restablecimiento');
         }
     };
 
@@ -38,23 +41,28 @@ export default function ForgotPasswordScreen() {
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Text style={styles.backButtonText}>Regresar</Text>
             </TouchableOpacity>
-            {/* Fondo y Logo igual al SignUp */}
+
+            {/* Fondo y Logo mantenidos */}
             <Image
                 source={require('../../../assets/images/CircleLayer.png')}
                 style={styles.blurBackground}
-                />
+            />
             <Image
                 source={require('../../../assets/icons/Group_35.png')}
                 style={styles.LogoPrincipal}
                 resizeMode="contain"
-                />
+            />
+
             <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
+            
             <Text style={styles.subtitle}>
                 No te preocupes, te ayudamos a recuperarla.
             </Text>
+            
             <Text style={styles.subtitle}>
                 Ingresa tu correo electrónico, teléfono o nombre de usuario y te enviaremos un enlace para que recuperes el acceso a tu cuenta.
             </Text>
+
             <TextInput
                 style={styles.input}
                 placeholder="Correo electrónico"
@@ -64,8 +72,18 @@ export default function ForgotPasswordScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
             />
-            <TouchableOpacity style={styles.button} onPress={handleForgotPassword} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ENVIAR CODIGO</Text>}
+
+            {/* El botón mantiene tus estilos originales */}
+            <TouchableOpacity 
+                style={styles.button} 
+                onPress={handleForgotPassword} 
+                disabled={loading}
+            >
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.buttonText}>ENVIAR CODIGO</Text>
+                )}
             </TouchableOpacity>
         </ScrollView>
     );
@@ -146,4 +164,4 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
     },
-});  
+});

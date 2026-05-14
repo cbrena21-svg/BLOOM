@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    TextInput,
-    Alert,
-    ScrollView,
-    ActivityIndicator
-} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
 
 // Importamos tus herramientas globales
 import { Colors } from '../../styles/colors';

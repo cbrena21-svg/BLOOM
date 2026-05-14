@@ -4,7 +4,7 @@ import {View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, Image} fr
 import CycleCircle from '../../components/Cycle/CycleCircle';
 import MoonPhase from '../../components/Cycle/MoonPhase';
 import EnergyBar from '../../components/Cycle/EnergyBar';
-import BottomNavigation from '../../components/common/BottonNavigationBar';
+import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { useCyclePhase } from '../../hooks/useCyclePhase';
 import { Colors } from '../../styles/colors';
 import { phases } from '../../data/phases';

@@ -65,7 +65,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
     flex: 1,
-    backgroundColor: '#131326',
+    backgroundColor: Colors.fondo,
     },
     blurBackground: {
         position: 'absolute',
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     logoContainer: {
         width: '100%',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
@@ -86,7 +86,6 @@ const styles = StyleSheet.create({
     LogoPrincipal: {
         width: 200,
         height: 100,
-        alignItems: 'Left',
     },
     button: {
         backgroundColor: Colors.tarjetas,
@@ -95,7 +94,6 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     circleContainer: {
-    marginTop: 10,
     justifyContent: 'center',
     alignItems: 'center',
     },

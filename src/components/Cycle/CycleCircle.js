@@ -1,11 +1,11 @@
 import React, {useRef} from 'react';
 import {View, Text, StyleSheet, PanResponder} from 'react-native';
 
-const SIZE = 290;
+const SIZE = 300;
 const RADIUS = SIZE / 2;
 const INDICATOR_SIZE = 52;
 const INDICATOR_RADIUS = INDICATOR_SIZE / 2;
-const CIRCLE_STROKE = 20;
+const CIRCLE_STROKE = 12;
 const TRACK_RADIUS = RADIUS - CIRCLE_STROKE / 2;
 
 export default function CycleCircle({

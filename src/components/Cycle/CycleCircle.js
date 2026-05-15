@@ -1,10 +1,12 @@
-import React from 'react';
-import {View, StyleSheet, PanResponder} from 'react-native';
+import React, {useRef} from 'react';
+import {View, Text, StyleSheet, PanResponder} from 'react-native';
 
-const SIZE = 280;
+const SIZE = 290;
 const RADIUS = SIZE / 2;
-
-
+const INDICATOR_SIZE = 52;
+const INDICATOR_RADIUS = INDICATOR_SIZE / 2;
+const CIRCLE_STROKE = 20;
+const TRACK_RADIUS = RADIUS - CIRCLE_STROKE / 2;
 
 export default function CycleCircle({
     color,
@@ -12,40 +14,102 @@ export default function CycleCircle({
     onDayChange,
 }) {
     const totalDays = 28;
+    const wrapperRef = useRef(null);
+
+    const circlePosition = useRef({
+    x: 0,
+    y: 0,
+    });
+
+    const updateCircleCenter = () => {
+    if (!wrapperRef.current) {
+        return;
+    }
+
+    wrapperRef.current.measureInWindow((x, y, width, height) => {
+        circlePosition.current = {
+        x: x + width / 2,
+        y: y + height / 2,
+        };
+    });
+    };
 
   const angle = (day / totalDays) * 360;
 
   const radians = (angle - 90) * (Math.PI / 180);
 
-const x = RADIUS + RADIUS * Math.cos(radians);
-  const y = RADIUS + RADIUS * Math.sin(radians);
+    const x =
+    RADIUS + TRACK_RADIUS * Math.cos(radians);
+
+    const y =
+    RADIUS + TRACK_RADIUS * Math.sin(radians);
 
     const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
 
-    onPanResponderMove: (_, gesture) => {
-        const centerX = SIZE / 2;
-        const centerY = SIZE / 2;
+    onMoveShouldSetPanResponder: () => true,
 
-        const dx = gesture.moveX - centerX;
-        const dy = gesture.moveY - centerY;
+    onPanResponderGrant: (_, gesture) => {
+        updateCircleCenter();
+
+        const dx = gesture.moveX - circlePosition.current.x;
+        const dy = gesture.moveY - circlePosition.current.y;
+
+        let theta = Math.atan2(dy, dx);
+        theta += Math.PI / 2;
+
+        if (theta < 0) {
+            theta += 2 * Math.PI;
+        }
+
+        let calculatedDay = Math.round((theta / (2 * Math.PI)) * totalDays);
+
+        if (calculatedDay <= 0) {
+            calculatedDay = 1;
+        }
+
+        if (calculatedDay > 28) {
+            calculatedDay = 28;
+        }
+
+        onDayChange(calculatedDay);
+    },
+
+    onPanResponderMove: (_, gesture) => {
+        const dx = gesture.moveX - circlePosition.current.x;
+        const dy = gesture.moveY - circlePosition.current.y;
 
         let theta = Math.atan2(dy, dx);
 
         theta += Math.PI / 2;
 
-      if (theta < 0) theta += 2 * Math.PI;
+        if (theta < 0) {
+        theta += 2 * Math.PI;
+        }
 
-        const calculatedDay = Math.round(
+        let calculatedDay = Math.round(
         (theta / (2 * Math.PI)) * totalDays
         );
 
-        onDayChange(Math.max(1, Math.min(28, calculatedDay)));
+        if (calculatedDay <= 0) {
+        calculatedDay = 1;
+        }
+
+        if (calculatedDay > 28) {
+        calculatedDay = 28;
+        }
+
+        onDayChange(calculatedDay);
     },
     });
 
     return (
-    <View style={styles.wrapper}>
+    <View
+        ref={wrapperRef}
+        style={styles.wrapper}
+        {...panResponder.panHandlers}
+        onLayout={updateCircleCenter}>
+      {/* CÍRCULO GRANDE */}
         <View
         style={[
             styles.circle,
@@ -55,18 +119,25 @@ const x = RADIUS + RADIUS * Math.cos(radians);
         ]}
         />
 
+      {/* INDICADOR */}
         <View
-        {...panResponder.panHandlers}
         style={[
             styles.indicator,
             {
             backgroundColor: '#2C2C45',
-            borderColor: color,
-            left: x - 22,
-            top: y - 22,
+            borderColor: '#808080',
+            left: x - INDICATOR_RADIUS,
+            top: y - INDICATOR_RADIUS,
             },
-        ]}
-        />
+        ]}>
+        <Text style={styles.dayLabel}>
+            día
+        </Text>
+
+        <Text style={styles.dayNumber}>
+            {day}
+        </Text>
+        </View>
     </View>
     );
 }
@@ -84,14 +155,30 @@ const styles = StyleSheet.create({
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    borderWidth: 5,
+    borderWidth: CIRCLE_STROKE,
     },
 
     indicator: {
     position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: INDICATOR_SIZE,
+    height: INDICATOR_SIZE,
+    borderRadius: INDICATOR_RADIUS,
     borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    },
+
+    dayLabel: {
+    fontSize: 8,
+    color: '#C8B8D8',
+    fontWeight: '600',
+    marginBottom: -2,
+    },
+
+    dayNumber: {
+    fontSize: 16,
+    color: '#C8B8D8',
+    fontWeight: '800',
+    lineHeight: 18,
     },
 });

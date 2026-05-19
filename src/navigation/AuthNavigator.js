@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignUpScreen from '../screens/auth/SignupScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
 
 // 1. Inicializamos el Stack. 
 // Esto nos devuelve dos componentes: Navigator y Screen.
@@ -27,7 +28,7 @@ export default function AuthNavigator() {
                 ya que nosotros diseñaremos nuestro propio encabezado en Figma.
         */
         <Stack.Navigator
-            initialRouteName="Login"
+            initialRouteName="Onboarding"
             screenOptions={{
                 headerShown: false,
                 animation: 'slide_from_right', // Animación de deslizamiento
@@ -42,6 +43,11 @@ export default function AuthNavigator() {
             <Stack.Screen
                 name="Login"
                 component={LoginScreen}
+            />
+
+            <Stack.Screen
+                name="Onboarding"
+                component={OnboardingScreen}
             />
 
             <Stack.Screen

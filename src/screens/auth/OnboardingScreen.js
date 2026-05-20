@@ -7,6 +7,8 @@ import {
     ActivityIndicator,
     ScrollView,
     Image,
+    Animated,
+    Easing,
     Dimensions,
     Platform
 } from 'react-native';
@@ -23,7 +25,7 @@ export default function OnboardingScreen({ navigation }) {
     const [showCalendar, setShowCalendar] = useState(false);
 
     const [onboardingData, setOnboardingData] = useState({
-        inp_age: 20,
+        inp_age: '',
         inp_contraceptive: '',
         inp_lmp_date: new Date(),
         inp_cycle_length: 28,
@@ -31,13 +33,13 @@ export default function OnboardingScreen({ navigation }) {
         inp_cycle_longest: 28,
         inp_period_length: 5,
         inp_pads_count: 3,
-        inp_clots: 'No presento coágulos (Flujo líquido continuo)',
+        inp_clots: '',
         inp_diagnoses: [],
         inp_chronic_symptoms: [],
         inp_migraine_timing: '',
-        inp_exercise_intensity: 'Moderado',
+        inp_exercise_intensity: '',
         inp_stress_level: false,
-        inp_digestion_pattern: 'Sin cambios / Normal',
+        inp_digestion_pattern: '',
         inp_sleep_quality: 'Excelente'
     });
 
@@ -66,31 +68,58 @@ export default function OnboardingScreen({ navigation }) {
         }
     }, [paginaActual]);
 
+    const spinValue = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
         if (isCalculating) {
+            // Inicia la animación de rotación infinita
+            Animated.loop(
+                Animated.timing(spinValue, {
+                    toValue: 1,
+                    duration: 1500,
+                    useNativeDriver: true,
+                    easing: Easing.linear
+                })
+            ).start();
+
+            // Frases limpias sin emojis
             const frases = [
-                "Analizando regularidad según criterios FIGO... 📊",
-                "Calculando volumen de flujo y reservas de hierro... 🩸",
-                "Estructurando pautas de alimentación hormonal... 🥑",
-                "¡Todo listo! Creando tu perfil Bloom... ✨"
+                "Analizando regularidad de tu ciclo...",
+                "Calculando reservas y flujo menstrual...",
+                "Estructurando pautas de estilo de vida...",
+                "Creando tu perfil Bloom..."
             ];
-            let index = 0;
+            let step = 0;
+            setTextoCarga(frases[0]);
+
             const interval = setInterval(() => {
-                if (index < frases.length - 1) {
-                    index++;
-                    setTextoCarga(frases[index]);
+                step++;
+                if (step < frases.length) {
+                    setTextoCarga(frases[step]);
                 } else {
                     clearInterval(interval);
                     setIsCalculating(false);
+
+                    // 1. Muestra todas tus respuestas completas en la consola
+                    console.log("Datos enviados de Onboarding Bloom:", onboardingData);
+
+                    // 2. Muestra la alerta de finalización (sin emojis)
+                    alert("¡Bienvenida a Bloom!");
+
+                    // 3. Te regresa automáticamente a la primera pregunta para pruebas
                     setPaginaActual(1);
-                    console.log("Datos del Onboarding:", onboardingData);
-                    alert("✨ ¡Simulación Exitosa! ✨");
                 }
-            }, 2000);
+            }, 2500);
 
             return () => clearInterval(interval);
         }
     }, [isCalculating]);
+
+    // Interpola el valor para CSS
+    const spin = spinValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg']
+    });
 
     const handleSiguiente = () => {
         if (paginaActual < totalPaginas) {
@@ -126,22 +155,22 @@ export default function OnboardingScreen({ navigation }) {
         { id: 'Grandes (Frecuentes, tamaño de una moneda o más)', title: 'Grandes', subtitle: 'Tamaño de una moneda o más', type: 'large' }
     ];
 
-    const opcionesDiagnosticos = ['PMOS', 'Endometriosis', 'Miomas uterinos', 'Ninguno de los anteriores'];
+    const opcionesDiagnosticos = ['Ninguno de los anteriores', 'PMOS', 'Endometriosis', 'Miomas uterinos'];
 
     const opcionesSintomas = [
+        'Ninguno',
         'Cólicos incapacitantes (requieren pastillas)',
         'Hinchazón corporal severa / Retención de líquidos',
         'Acné hormonal (mandíbula/mejillas)',
         'Sensibilidad o dolor en los pechos',
-        'Sofocos o calores nocturnos antes de la regla',
-        'Ninguno'
+        'Sofocos o calores nocturnos antes de la regla'
     ];
 
     const opcionesMigranas = [
+        'No sufro de migrañas',
         'Días antes de mi periodo (Premenstrual)',
         'Durante el sangrado (Menstrual)',
-        'Me dan en ambos momentos',
-        'No sufro de migrañas'
+        'Me dan en ambos momentos'
     ];
 
     // ---- LISTAS PARA PREGUNTAS 12 A 15 ----
@@ -153,9 +182,9 @@ export default function OnboardingScreen({ navigation }) {
     ];
 
     const opcionesDigestion = [
+        'Se mantiene regular y normal',
         'Sufro de estreñimiento severo',
-        'Tiendo a evacuaciones sueltas o diarrea',
-        'Se mantiene regular y normal'
+        'Tiendo a evacuaciones sueltas o diarrea'
     ];
 
     const opcionesSueno = [
@@ -182,6 +211,26 @@ export default function OnboardingScreen({ navigation }) {
             }
         });
     };
+
+    // Verifica si la página actual tiene los datos obligatorios
+    const validarBotonDeshabilitado = () => {
+        const d = onboardingData;
+        switch (paginaActual) {
+            case 1: return d.inp_age === '';
+            case 2: return d.inp_contraceptive === ''; // Aplica esta lógica a las páginas 3 a la 7 según tus variables
+            case 8: return d.inp_clots === '';
+            case 9: return d.inp_diagnoses.length === 0;
+            case 10: return d.inp_chronic_symptoms.length === 0;
+            case 11: return d.inp_migraine_timing === '';
+            case 12: return d.inp_exercise_intensity === '';
+            // El case 13 (Estrés) no se bloquea porque el switch siempre tiene un valor (true/false)
+            case 14: return d.inp_digestion_pattern === '';
+            case 15: return d.inp_sleep_quality === '';
+            default: return false;
+        }
+    };
+
+    const botonDeshabilitado = validarBotonDeshabilitado();
 
     const renderPregunta = () => {
         switch (paginaActual) {
@@ -688,9 +737,14 @@ export default function OnboardingScreen({ navigation }) {
 
     if (isCalculating) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={Colors.botones || '#6A5ACD'} />
-                <Text style={styles.loadingText}>{textoCarga}</Text>
+            <View style={styles.loadingScreen}>
+                <View style={styles.loadingCard}>
+                    {/* Luna giratoria hecha con estilos nativos */}
+                    <Animated.View style={[styles.creativeMoonLoader, { transform: [{ rotate: spin }] }]} />
+
+                    <Text style={styles.loadingTitle}>Personalizando tu espacio</Text>
+                    <Text style={styles.loadingSubtitle}>{textoCarga}</Text>
+                </View>
             </View>
         );
     }
@@ -714,7 +768,11 @@ export default function OnboardingScreen({ navigation }) {
                     {renderPregunta()}
                 </View>
 
-                <TouchableOpacity style={styles.continueButton} onPress={handleSiguiente}>
+                <TouchableOpacity
+                    style={[styles.continueButton, botonDeshabilitado && { opacity: 0.3 }]}
+                    onPress={handleSiguiente}
+                    disabled={botonDeshabilitado}
+                >
                     <Text style={styles.continueButtonText}>
                         {paginaActual === totalPaginas ? 'FINALIZAR' : 'Continuar'}
                     </Text>
@@ -892,5 +950,23 @@ const styles = StyleSheet.create({
 
     sleepLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 12, fontWeight: '600' },
     sleepLabelActive: { color: '#FFFFFF', fontWeight: 'bold' },
-    sleepDescriptionText: { color: Colors.botones || '#6A5ACD', fontSize: 14, textAlign: 'center', marginTop: 24, paddingHorizontal: 10, fontWeight: '500' }
+    sleepDescriptionText: { color: Colors.botones || '#6A5ACD', fontSize: 14, textAlign: 'center', marginTop: 24, paddingHorizontal: 10, fontWeight: '500' },
+
+    // --- ESTILOS PANTALLA DE CARGA FINAL ---
+    loadingScreen: { flex: 1, backgroundColor: Colors.fondo || '#12111A', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+    loadingCard: { backgroundColor: Colors.tarjetas || '#1F1E29', borderRadius: 28, width: '100%', paddingVertical: 50, paddingHorizontal: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+    loadingTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
+    loadingSubtitle: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, textAlign: 'center', height: 40 },
+
+    // El loader en forma de Luna Creciente
+    creativeMoonLoader: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 4,
+        borderColor: 'transparent',
+        borderTopColor: Colors.botones || '#6A5ACD',
+        borderLeftColor: Colors.botones || '#6A5ACD',
+        marginBottom: 30
+    }
 });

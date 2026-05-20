@@ -28,7 +28,7 @@ export default function AuthNavigator() {
                 ya que nosotros diseñaremos nuestro propio encabezado en Figma.
         */
         <Stack.Navigator
-            initialRouteName="Onboarding"
+            initialRouteName="Login"
             screenOptions={{
                 headerShown: false,
                 animation: 'slide_from_right', // Animación de deslizamiento

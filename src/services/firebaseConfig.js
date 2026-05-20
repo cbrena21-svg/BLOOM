@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: "AIzaSyDCMK9Y9Scry8bWZEKlIljJsbohUUDCIaA",
@@ -14,6 +15,8 @@ const firebaseConfig = {
 
 // 1. Inicializamos la App (Lógica limpia)
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
 
 // 2. Inicializamos Auth con PERSISTENCIA 
 // Usamos un let para poder definirlo según la condición
@@ -34,4 +37,4 @@ if (getApps().length > 0) {
     });
 }
 
-export { app, auth };
+export { app, auth, db };

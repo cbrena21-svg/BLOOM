@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebaseConfig';
+// 1. Importamos las herramientas nativas de Firestore
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebaseConfig';
+
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-import { getLastPeriodDate } from '../services/storageService';
+// 2. Corregimos/Aseguramos la importación de tu Onboarding
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
+
 import { Colors } from '../styles/colors';
 
 export default function RootNavigator() {
@@ -17,19 +22,20 @@ export default function RootNavigator() {
         const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
             try {
                 if (authenticatedUser) {
-                    // 1. PRIMERO verificamos la base de datos de manera asíncrona
-                    const lastPeriodResult = await getLastPeriodDate(authenticatedUser.uid);
-                    
-                    if (!lastPeriodResult.success || !lastPeriodResult.data) {
-                        // Es primer uso (No hay encuesta previa guardada)
+                    // 🌟 CONSULTA REAL A FIRESTORE:
+                    // Buscamos el cajón con el ID único del usuario (uid)
+                    const docRef = doc(db, "users", authenticatedUser.uid);
+                    const docSnap = await getDoc(docRef);
+
+                    if (!docSnap.exists()) {
+                        // Si el documento NO existe en Firestore, es su primer uso
                         setFirstTime(true);
                     } else {
-                        // Ya tiene datos guardados
+                        // Si ya existe el documento, ya hizo el Onboarding
                         setFirstTime(false);
                     }
 
-                    // 2. HASTA QUE YA SABEMOS si es primer uso o no, guardamos al usuario.
-                    // Esto evita renderizados intermedios que manden al Home por error.
+                    // Hasta que Firestore nos responde, guardamos al usuario de forma segura
                     setUser(authenticatedUser);
 
                 } else {
@@ -37,7 +43,7 @@ export default function RootNavigator() {
                     setFirstTime(false);
                 }
             } catch (error) {
-                console.error("Error comprobando onboarding:", error);
+                console.error("Error comprobando onboarding en Firestore:", error);
                 setUser(null);
                 setFirstTime(false);
             } finally {
@@ -51,19 +57,23 @@ export default function RootNavigator() {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={Colors.botones} />
+                <ActivityIndicator size="large" color={Colors.botones || '#6A5ACD'} />
             </View>
         );
     }
 
     return (
         <NavigationContainer>
-            {/* El key dinámico fuerza a React Navigation a reconstruir el árbol de pantallas correctamente */}
             {user ? (
-                <AppNavigator
-                    key={`${user.uid}-${firstTime ? 'onboarding' : 'home'}`}
-                    screenName={firstTime ? 'LastPeriod' : 'Home'}
-                />
+                firstTime ? (
+                    // ✅ Le pasamos la función para que el Onboarding pueda avisarle al RootNavigator
+                    <OnboardingScreen
+                        key={`onboarding-${user.uid}`}
+                        onOnboardingComplete={() => setFirstTime(false)}
+                    />
+                ) : (
+                    <AppNavigator key={`app-${user.uid}`} />
+                )
             ) : (
                 <AuthNavigator />
             )}

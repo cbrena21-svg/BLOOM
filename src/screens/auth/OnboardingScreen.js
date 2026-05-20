@@ -10,15 +10,18 @@ import {
     Animated,
     Easing,
     Dimensions,
-    Platform
+    Platform,
+    Alert
 } from 'react-native';
 import { Colors } from '../../styles/colors';
+import { guardarPerfilOnboarding } from '../../services/authService';
+import { calcularPerfilClinico } from '../../utils/clicnicCalculator';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
-export default function OnboardingScreen({ navigation }) {
+export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
     const [paginaActual, setPaginaActual] = useState(1);
     const [isCalculating, setIsCalculating] = useState(false);
     const [textoCarga, setTextoCarga] = useState('Analizando tus respuestas...');
@@ -125,10 +128,6 @@ export default function OnboardingScreen({ navigation }) {
                     setTextoCarga(frases[step]);
                 } else {
                     clearInterval(interval);
-                    setIsCalculating(false);
-                    console.log("Datos enviados de Onboarding Bloom:", onboardingData);
-                    alert("¡Bienvenida a Bloom!");
-                    setPaginaActual(1);
                 }
             }, 2500);
 
@@ -137,11 +136,35 @@ export default function OnboardingScreen({ navigation }) {
     }, [isCalculating]);
 
 
-    const handleSiguiente = () => {
+    const handleSiguiente = async () => {
         if (paginaActual < totalPaginas) {
             setPaginaActual(paginaActual + 1);
         } else {
+            // --- ¡LLEGAMOS AL FINAL DE LAS 16 PREGUNTAS! ---
+
+            // COMPROBACIÓN LOCAL (Esto responde a tu pregunta 4 sobre el console.log):
+            // Sirve para ver en tu terminal de la computadora si los cálculos matemáticos son correctos antes de subirlos.
+            const perfilCalculado = calcularPerfilClinico(onboardingData);
+            console.log("PROBANDO CÁLCULOS BLOOM:", perfilCalculado);
+
+            // Activamos tu hermosa pantalla de carga con las frases clínicas
             setIsCalculating(true);
+
+            // Mandamos los datos brutos a la "aduana" de Firebase que creamos en el paso anterior
+            const resultado = await guardarPerfilOnboarding(onboardingData);
+
+            // Apagamos el cargando simulado (puedes darle unos segundos si lo deseas, o directo)
+            setIsCalculating(false);
+
+            if (resultado.success) {
+                console.log("¡Perfil clínico guardado con éxito en la nube!");
+                // ✅ Activamos el puente para cambiar de pantalla de inmediato
+                if (onOnboardingComplete) {
+                    onOnboardingComplete();
+                }
+            } else {
+                Alert.alert("Error de Guardado", "No pudimos procesar tus datos de salud: " + resultado.error);
+            }
         }
     };
 

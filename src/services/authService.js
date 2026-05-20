@@ -1,4 +1,7 @@
-import { auth } from './firebaseConfig';
+import { auth, db } from './firebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
+import { calcularPerfilClinico } from '../utils/clicnicCalculator';
+
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -81,5 +84,23 @@ const traducirError = (errorCode) => {
             return "Correo o contraseña incorrectos.";
         default:
             return "Ocurrió un error inesperado. Inténtalo de nuevo.";
+    }
+};
+
+export const guardarPerfilOnboarding = async (inputsRaw) => {
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("No hay un usuario autenticado activo.");
+
+        // Ejecutamos las matemáticas y banderas clínicas de tu Notion
+        const perfilCompleto = calcularPerfilClinico(inputsRaw);
+
+        // Guardamos el documento en Firestore usando el UID del usuario como ID del documento
+        await setDoc(doc(db, "users", user.uid), perfilCompleto);
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error al guardar el onboarding:", error);
+        return { success: false, error: error.message };
     }
 };

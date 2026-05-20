@@ -68,21 +68,48 @@ export default function OnboardingScreen({ navigation }) {
         }
     }, [paginaActual]);
 
-    const spinValue = useRef(new Animated.Value(0)).current;
+    // Controla el brinco (0 = en el suelo, 1 = punto más alto)
+    const bounceValue = useRef(new Animated.Value(0)).current;
+
+    // Interpolación para el movimiento vertical de la luna
+    const moonTranslateY = bounceValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, -30] // Sube 30 píxeles
+    });
+
+    // Interpolación para el tamaño de la sombra
+    const shadowScale = bounceValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 0.4] // Se encoge a menos de la mitad cuando la luna sube
+    });
+
+    // Interpolación para la opacidad de la sombra
+    const shadowOpacity = bounceValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.4, 0.1] // Se vuelve más tenue al subir
+    });
 
     useEffect(() => {
         if (isCalculating) {
-            // Inicia la animación de rotación infinita
+            // Animación en bucle: Sube fluido y baja con gravedad
             Animated.loop(
-                Animated.timing(spinValue, {
-                    toValue: 1,
-                    duration: 1500,
-                    useNativeDriver: true,
-                    easing: Easing.linear
-                })
+                Animated.sequence([
+                    Animated.timing(bounceValue, {
+                        toValue: 1,
+                        duration: 550,
+                        easing: Easing.out(Easing.quad),
+                        useNativeDriver: true
+                    }),
+                    Animated.timing(bounceValue, {
+                        toValue: 0,
+                        duration: 450,
+                        easing: Easing.in(Easing.quad),
+                        useNativeDriver: true
+                    })
+                ])
             ).start();
 
-            // Frases limpias sin emojis
+            // Frases limpias y profesionales sin emojis
             const frases = [
                 "Analizando regularidad de tu ciclo...",
                 "Calculando reservas y flujo menstrual...",
@@ -99,14 +126,8 @@ export default function OnboardingScreen({ navigation }) {
                 } else {
                     clearInterval(interval);
                     setIsCalculating(false);
-
-                    // 1. Muestra todas tus respuestas completas en la consola
                     console.log("Datos enviados de Onboarding Bloom:", onboardingData);
-
-                    // 2. Muestra la alerta de finalización (sin emojis)
                     alert("¡Bienvenida a Bloom!");
-
-                    // 3. Te regresa automáticamente a la primera pregunta para pruebas
                     setPaginaActual(1);
                 }
             }, 2500);
@@ -115,11 +136,6 @@ export default function OnboardingScreen({ navigation }) {
         }
     }, [isCalculating]);
 
-    // Interpola el valor para CSS
-    const spin = spinValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '360deg']
-    });
 
     const handleSiguiente = () => {
         if (paginaActual < totalPaginas) {
@@ -155,15 +171,15 @@ export default function OnboardingScreen({ navigation }) {
         { id: 'Grandes (Frecuentes, tamaño de una moneda o más)', title: 'Grandes', subtitle: 'Tamaño de una moneda o más', type: 'large' }
     ];
 
-    const opcionesDiagnosticos = ['Ninguno de los anteriores', 'PMOS', 'Endometriosis', 'Miomas uterinos'];
+    const opcionesDiagnosticos = ['PMOS', 'Endometriosis', 'Miomas uterinos', 'Ninguno de los anteriores'];
 
     const opcionesSintomas = [
-        'Ninguno',
         'Cólicos incapacitantes (requieren pastillas)',
         'Hinchazón corporal severa / Retención de líquidos',
         'Acné hormonal (mandíbula/mejillas)',
         'Sensibilidad o dolor en los pechos',
-        'Sofocos o calores nocturnos antes de la regla'
+        'Sofocos o calores nocturnos antes de la regla',
+        'Ninguno'
     ];
 
     const opcionesMigranas = [
@@ -314,7 +330,7 @@ export default function OnboardingScreen({ navigation }) {
                             ) : (
                                 <>
                                     <TouchableOpacity style={styles.dateDisplayButtonAndroid} onPress={() => setShowCalendar(true)}>
-                                        <Text style={styles.dateDisplayTextAndroid}>📅 {formatearFecha(onboardingData.inp_lmp_date)}</Text>
+                                        <Text style={styles.dateDisplayTextAndroid}> {formatearFecha(onboardingData.inp_lmp_date)}</Text>
                                     </TouchableOpacity>
                                     {showCalendar && (
                                         <DateTimePicker
@@ -739,8 +755,18 @@ export default function OnboardingScreen({ navigation }) {
         return (
             <View style={styles.loadingScreen}>
                 <View style={styles.loadingCard}>
-                    {/* Luna giratoria hecha con estilos nativos */}
-                    <Animated.View style={[styles.creativeMoonLoader, { transform: [{ rotate: spin }] }]} />
+
+                    {/* Escenario del Loading Animado */}
+                    <View style={styles.animationContainer}>
+                        {/* Luna Creciente que brinca */}
+                        <Animated.View style={[styles.moonContainer, { transform: [{ translateY: moonTranslateY }] }]}>
+                            <View style={styles.moonBody} />
+                            <View style={[styles.moonMask, { backgroundColor: Colors.tarjetas || '#1F1E29' }]} />
+                        </Animated.View>
+
+                        {/* Sombra elíptica en el suelo que reacciona al brinco */}
+                        <Animated.View style={[styles.moonShadow, { transform: [{ scaleX: shadowScale }], opacity: shadowOpacity }]} />
+                    </View>
 
                     <Text style={styles.loadingTitle}>Personalizando tu espacio</Text>
                     <Text style={styles.loadingSubtitle}>{textoCarga}</Text>
@@ -780,7 +806,7 @@ export default function OnboardingScreen({ navigation }) {
 
                 {paginaActual > 1 && (
                     <TouchableOpacity style={styles.backLink} onPress={handleAtras}>
-                        <Text style={styles.backLinkText}>Volver a la pregunta anterior</Text>
+                        <Text style={styles.backLinkText}>Atrás</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -952,21 +978,20 @@ const styles = StyleSheet.create({
     sleepLabelActive: { color: '#FFFFFF', fontWeight: 'bold' },
     sleepDescriptionText: { color: Colors.botones || '#6A5ACD', fontSize: 14, textAlign: 'center', marginTop: 24, paddingHorizontal: 10, fontWeight: '500' },
 
-    // --- ESTILOS PANTALLA DE CARGA FINAL ---
+    // --- ESTILOS PANTALLA DE CARGA FINAL (LUNA BRINCANDO) ---
     loadingScreen: { flex: 1, backgroundColor: Colors.fondo || '#12111A', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
     loadingCard: { backgroundColor: Colors.tarjetas || '#1F1E29', borderRadius: 28, width: '100%', paddingVertical: 50, paddingHorizontal: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
     loadingTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
     loadingSubtitle: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, textAlign: 'center', height: 40 },
 
-    // El loader en forma de Luna Creciente
-    creativeMoonLoader: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 4,
-        borderColor: 'transparent',
-        borderTopColor: Colors.botones || '#6A5ACD',
-        borderLeftColor: Colors.botones || '#6A5ACD',
-        marginBottom: 30
-    }
+    // Contenedor que fija el espacio para que el brinco no mueva los textos de abajo
+    animationContainer: { height: 90, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24, width: 100, position: 'relative' },
+
+    // Construcción vectorial de la Luna Creciente
+    moonContainer: { width: 40, height: 40, position: 'relative', marginBottom: 4 },
+    moonBody: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.botones || '#6A5ACD' },
+    moonMask: { width: 40, height: 40, borderRadius: 20, position: 'absolute', top: -5, left: 7 }, // Hace el recorte perfecto de la fase
+
+    // Sombra ovalada idéntica a la de tu referencia
+    moonShadow: { width: 30, height: 5, borderRadius: 2.5, backgroundColor: '#000000' }
 });

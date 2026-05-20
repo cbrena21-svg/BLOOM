@@ -24,17 +24,17 @@ export default function OnboardingScreen({ navigation }) {
 
     const [onboardingData, setOnboardingData] = useState({
         inp_age: 20,
-        inp_contraceptive: 'Ninguno',
+        inp_contraceptive: '',
         inp_lmp_date: new Date(),
         inp_cycle_length: 28,
         inp_cycle_shortest: 28,
         inp_cycle_longest: 28,
         inp_period_length: 5,
         inp_pads_count: 3,
-        inp_clots: 'Ninguno',
+        inp_clots: 'No presento coágulos (Flujo líquido continuo)',
         inp_diagnoses: [],
         inp_chronic_symptoms: [],
-        inp_migraine_timing: 'No sufro migrañas',
+        inp_migraine_timing: '',
         inp_exercise_intensity: 'Moderado',
         inp_stress_level: false,
         inp_digestion_pattern: 'Sin cambios / Normal',
@@ -117,6 +117,49 @@ export default function OnboardingScreen({ navigation }) {
         if (selectedDate) {
             setOnboardingData(prev => ({ ...prev, inp_lmp_date: selectedDate }));
         }
+    };
+
+    // ---- LISTAS PARA PREGUNTAS 8 A 11 ----
+    const opcionesCoagulos = [
+        { id: 'No presento coágulos (Flujo líquido continuo)', title: 'Flujo líquido continuo', subtitle: 'Sin coágulos', type: 'none' },
+        { id: 'Pequeños (Ocasionales, tamaño de una lenteja)', title: 'Pequeños', subtitle: 'Tamaño de una lenteja', type: 'small' },
+        { id: 'Grandes (Frecuentes, tamaño de una moneda o más)', title: 'Grandes', subtitle: 'Tamaño de una moneda o más', type: 'large' }
+    ];
+
+    const opcionesDiagnosticos = ['PMOS', 'Endometriosis', 'Miomas uterinos', 'Ninguno de los anteriores'];
+
+    const opcionesSintomas = [
+        'Cólicos incapacitantes (requieren pastillas)',
+        'Hinchazón corporal severa / Retención de líquidos',
+        'Acné hormonal (mandíbula/mejillas)',
+        'Sensibilidad o dolor en los pechos',
+        'Sofocos o calores nocturnos antes de la regla',
+        'Ninguno'
+    ];
+
+    const opcionesMigranas = [
+        'Días antes de mi periodo (Premenstrual)',
+        'Durante el sangrado (Menstrual)',
+        'Me dan en ambos momentos',
+        'No sufro de migrañas'
+    ];
+
+    // ---- LÓGICA PARA SELECCIÓN MÚLTIPLE (Páginas 9 y 10) ----
+    const toggleMultiSelect = (field, item, isNoneOption) => {
+        setOnboardingData(prev => {
+            const currentList = prev[field];
+            if (isNoneOption) {
+                return { ...prev, [field]: [item] };
+            } else {
+                let newList = currentList.filter(i => i !== 'Ninguno' && i !== 'Ninguno de los anteriores');
+                if (newList.includes(item)) {
+                    newList = newList.filter(i => i !== item);
+                } else {
+                    newList.push(item);
+                }
+                return { ...prev, [field]: newList };
+            }
+        });
     };
 
     const renderPregunta = () => {
@@ -361,6 +404,129 @@ export default function OnboardingScreen({ navigation }) {
                         <Text style={styles.gridFooterText}>cambios al día aprox.</Text>
                     </View>
                 );
+            case 8:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Textura del flujo</Text>
+                        <Text style={styles.questionSubtitle}>Durante tu periodo, ¿cómo describirías la presencia de coágulos de sangre?</Text>
+
+                        {/* CAMBIO AQUÍ: Cambiamos View por ScrollView y agregamos padding */}
+                        <ScrollView
+                            style={{ width: '100%' }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={[styles.clotsContainer, { paddingBottom: 20 }]}
+                        >
+                            {opcionesCoagulos.map((opcion) => {
+                                const esSeleccionado = onboardingData.inp_clots === opcion.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={opcion.id}
+                                        style={[styles.clotCard, esSeleccionado && styles.clotCardActive]}
+                                        onPress={() => setOnboardingData(prev => ({ ...prev, inp_clots: opcion.id }))}
+                                    >
+                                        <View style={styles.clotVisualContainer}>
+                                            {opcion.type === 'none' && <View style={styles.clotVisualLine} />}
+                                            {opcion.type === 'small' && (
+                                                <View style={styles.clotVisualDotsRow}>
+                                                    <View style={styles.clotDotSmall} /><View style={styles.clotDotSmall} /><View style={styles.clotDotSmall} />
+                                                </View>
+                                            )}
+                                            {opcion.type === 'large' && (
+                                                <View style={styles.clotVisualDotsRow}>
+                                                    <View style={styles.clotDotLarge} /><View style={styles.clotDotLarge} />
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={styles.clotTextContainer}>
+                                            <Text style={[styles.clotTitle, esSeleccionado && styles.clotTitleActive]}>{opcion.title}</Text>
+                                            <Text style={styles.clotSubtitle}>{opcion.subtitle}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                );
+
+            case 9:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Diagnósticos</Text>
+                        <Text style={styles.questionSubtitle}>¿Has sido diagnosticada por un médico con alguna de estas condiciones? (Puedes elegir varias)</Text>
+
+                        <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
+                            {opcionesDiagnosticos.map((diag) => {
+                                const esSeleccionado = onboardingData.inp_diagnoses.includes(diag);
+                                const isNone = diag === 'Ninguno de los anteriores';
+                                return (
+                                    <TouchableOpacity
+                                        key={diag}
+                                        style={[styles.checkboxRow, esSeleccionado && styles.checkboxRowActive]}
+                                        onPress={() => toggleMultiSelect('inp_diagnoses', diag, isNone)}
+                                    >
+                                        <View style={[styles.checkbox, esSeleccionado && styles.checkboxActive]}>
+                                            {esSeleccionado && <Text style={styles.checkmark}>✓</Text>}
+                                        </View>
+                                        <Text style={[styles.checkboxText, esSeleccionado && styles.checkboxTextActive]}>{diag}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                );
+
+            case 10:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Síntomas Frecuentes</Text>
+                        <Text style={styles.questionSubtitle}>¿Sufres habitualmente de alguno de estos síntomas a lo largo de tu ciclo?</Text>
+
+                        {/* AHORA: Usa el formato uniforme de Checkboxes de la Pág 9 */}
+                        <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
+                            {opcionesSintomas.map((sintoma) => {
+                                const esSeleccionado = onboardingData.inp_chronic_symptoms.includes(sintoma);
+                                const isNone = sintoma === 'Ninguno';
+                                return (
+                                    <TouchableOpacity
+                                        key={sintoma}
+                                        style={[styles.checkboxRow, esSeleccionado && styles.checkboxRowActive]}
+                                        onPress={() => toggleMultiSelect('inp_chronic_symptoms', sintoma, isNone)}
+                                    >
+                                        <View style={[styles.checkbox, esSeleccionado && styles.checkboxActive]}>
+                                            {esSeleccionado && <Text style={styles.checkmark}>✓</Text>}
+                                        </View>
+                                        <Text style={[styles.checkboxText, esSeleccionado && styles.checkboxTextActive]}>{sintoma}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                );
+
+            case 11:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Dolores de Cabeza</Text>
+                        <Text style={styles.questionSubtitle}>Si sufres de migrañas intensas, ¿en qué momento ocurren?</Text>
+
+                        {/* AHORA: Usa el formato exacto de la Pregunta 2 */}
+                        <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
+                            {opcionesMigranas.map((momento) => {
+                                const esSeleccionado = onboardingData.inp_migraine_timing === momento;
+                                return (
+                                    <TouchableOpacity
+                                        key={momento}
+                                        style={[styles.optionRow, esSeleccionado && styles.optionRowActive]}
+                                        onPress={() => setOnboardingData(prev => ({ ...prev, inp_migraine_timing: momento }))}
+                                    >
+                                        <Text style={[styles.optionText, esSeleccionado && styles.optionTextActive]}>{momento}</Text>
+                                        {esSeleccionado && <View style={styles.radioCheck} />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                );
 
             default:
                 return (
@@ -516,5 +682,44 @@ const styles = StyleSheet.create({
     backLink: { marginTop: 12, paddingVertical: 4 },
     backLinkText: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, textDecorationLine: 'underline' },
     loadingContainer: { flex: 1, backgroundColor: Colors.fondo || '#12111A', justifyContent: 'center', alignItems: 'center' },
-    loadingText: { color: '#FFFFFF', fontSize: 15, marginTop: 16, textAlign: 'center', paddingHorizontal: 40 }
+    loadingText: { color: '#FFFFFF', fontSize: 15, marginTop: 16, textAlign: 'center', paddingHorizontal: 40 },
+
+    // Pág 8: Coágulos (Tarjetas Visuales)
+    clotsContainer: { width: '100%', gap: 10 },
+    clotCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' },
+    clotCardActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD' },
+    clotVisualContainer: { width: 50, height: 50, borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.08)', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+    clotTextContainer: { flex: 1 },
+    clotTitle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 15, fontWeight: 'bold', marginBottom: 4 },
+    clotTitleActive: { color: '#FFFFFF' },
+    clotSubtitle: { color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 },
+    clotVisualLine: { width: 25, height: 4, backgroundColor: Colors.botones || '#6A5ACD', borderRadius: 2 },
+    clotVisualDotsRow: { flexDirection: 'row', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', width: 30 },
+    clotDotSmall: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.botones || '#6A5ACD' },
+    clotDotLarge: { width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.botones || '#6A5ACD' },
+
+    // Pág 9: Checkboxes (Diagnósticos)
+    checkboxRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
+    checkboxRowActive: { backgroundColor: 'rgba(106, 90, 205, 0.1)', borderColor: 'rgba(106, 90, 205, 0.5)' },
+    checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.3)', marginRight: 12, justifyContent: 'center', alignItems: 'center' },
+    checkboxActive: { backgroundColor: Colors.botones || '#6A5ACD', borderColor: Colors.botones || '#6A5ACD' },
+    checkmark: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' },
+    checkboxText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, flex: 1 },
+    checkboxTextActive: { color: '#FFFFFF', fontWeight: '600' },
+
+    // Pág 10: Chips (Síntomas) - AHORA TAMAÑO UNIFORME
+    chipsScrollContent: { paddingBottom: 20, width: '100%' },
+    chipsContainer: { flexDirection: 'column', width: '100%', gap: 10 },
+    chip: { backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', width: '100%', alignItems: 'center', justifyContent: 'center' },
+    chipActive: { backgroundColor: Colors.botones || '#6A5ACD', borderColor: Colors.botones || '#6A5ACD' },
+    chipText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 13, fontWeight: '500', textAlign: 'center' },
+    chipTextActive: { color: '#FFFFFF', fontWeight: 'bold' },
+
+    // Pág 11: Radio Buttons (Migrañas)
+    radioRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14, marginBottom: 8 },
+    radioRowActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)' },
+    radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', marginRight: 12, justifyContent: 'center', alignItems: 'center' },
+    radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.botones || '#6A5ACD' },
+    radioText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, flex: 1 },
+    radioTextActive: { color: '#FFFFFF', fontWeight: 'bold' }
 });

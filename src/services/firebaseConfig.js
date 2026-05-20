@@ -13,25 +13,22 @@ const firebaseConfig = {
     measurementId: "G-F8P5YVZR29"
 };
 
-// 1. Inicializamos la App (Lógica limpia)
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// 🌟 REVOLUCIÓN DEL BUG: Guardamos si ya existe ANTES de crearla
+const yaExisteApp = getApps().length > 0;
 
+// Inicializamos la App usando nuestra constante limpia
+const app = yaExisteApp ? getApp() : initializeApp(firebaseConfig);
+
+// Inicializamos Firestore
 const db = getFirestore(app);
 
-// 2. Inicializamos Auth con PERSISTENCIA 
-// Usamos un let para poder definirlo según la condición
 let auth;
 
-/**
- * ¿Por qué hacemos esto?
- * Si la app ya tiene una instancia de Auth (por un recargo de código), la usamos.
- * Si no tiene ninguna, la inicializamos con AsyncStorage para que la sesión sea eterna.
- */
-if (getApps().length > 0) {
-    // Si la app ya existía, intentamos obtener el Auth ya configurado
+// Ahora la condición sí va a funcionar perfectamente en los recargos de Expo
+if (yaExisteApp) {
     auth = getAuth(app);
 } else {
-    // Si es la primera vez que arranca, configuramos la persistencia móvil
+    // Esto se ejecutará SÍ O SÍ la primera vez, blindando tu sesión eterna
     auth = initializeAuth(app, {
         persistence: getReactNativePersistence(AsyncStorage)
     });

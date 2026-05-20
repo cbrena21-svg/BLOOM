@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import CycleCircle from '../../components/Cycle/CycleCircle';
 import MoonPhase from '../../components/Cycle/MoonPhase';
 import EnergyBar from '../../components/Cycle/EnergyBar';
@@ -58,10 +59,10 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Image source={require('../../../assets/images/CircleLayer.png')} style={styles.blurBackground}/>
-            
+            <Image source={require('../../../assets/images/CircleLayer.png')} style={styles.blurBackground} />
+
             <View style={styles.logoContainer}>
-                <Image source={require('../../../assets/icons/Group_35.png')} style={styles.LogoPrincipal} resizeMode="contain"/>
+                <Image source={require('../../../assets/icons/Group_35.png')} style={styles.LogoPrincipal} resizeMode="contain" />
                 <TouchableOpacity style={styles.button} onPress={handleLogout}>
                     <Text style={styles.buttonText}>Exit</Text>
                 </TouchableOpacity>
@@ -91,7 +92,7 @@ export default function HomeScreen() {
                     color={currentPhase.color}
                 />
             </View>
-            
+
             <BottomNavigation />
         </SafeAreaView>
     );

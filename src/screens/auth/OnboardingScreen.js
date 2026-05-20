@@ -144,6 +144,27 @@ export default function OnboardingScreen({ navigation }) {
         'No sufro de migrañas'
     ];
 
+    // ---- LISTAS PARA PREGUNTAS 12 A 15 ----
+    const opcionesEjercicio = [
+        { id: 'Alta intensidad constante (Crossfit, HIIT, correr diario)', title: 'Alta intensidad', subtitle: 'Crossfit, HIIT, correr', level: 3 },
+        { id: 'Moderado / Mixto (Gimnasio, Pilates, Yoga)', title: 'Moderado / Mixto', subtitle: 'Gimnasio, Pilates, Yoga', level: 2 },
+        { id: 'Ligero (Caminar, estiramientos, bajo impacto)', title: 'Ligero', subtitle: 'Caminar, estiramientos', level: 1 },
+        { id: 'Sedentario (No realizo ejercicio actualmente)', title: 'Sedentario', subtitle: 'Sin actividad actual', level: 0 }
+    ];
+
+    const opcionesDigestion = [
+        'Sufro de estreñimiento severo',
+        'Tiendo a evacuaciones sueltas o diarrea',
+        'Se mantiene regular y normal'
+    ];
+
+    const opcionesSueno = [
+        { id: 'Duermo profundo y amanezco descansada', label: 'Profundo', level: 3 },
+        { id: 'Tengo sueño ligero o interrupciones constantes', label: 'Ligero', level: 2 },
+        { id: 'Insomnio (me cuesta mucho conciliar el sueño)', label: 'Insomnio', level: 1 }
+    ];
+
+
     // ---- LÓGICA PARA SELECCIÓN MÚLTIPLE (Páginas 9 y 10) ----
     const toggleMultiSelect = (field, item, isNoneOption) => {
         setOnboardingData(prev => {
@@ -527,6 +548,133 @@ export default function OnboardingScreen({ navigation }) {
                         </ScrollView>
                     </View>
                 );
+            case 12:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Actividad Física</Text>
+                        <Text style={styles.questionSubtitle}>¿Cómo es tu rutina de ejercicio físico habitualmente?</Text>
+
+                        {/* Selector visual de barras de energía */}
+                        <ScrollView style={{ width: '100%' }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20, gap: 10 }}>
+                            {opcionesEjercicio.map((opcion) => {
+                                const esSeleccionado = onboardingData.inp_exercise_intensity === opcion.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={opcion.id}
+                                        style={[styles.exerciseCard, esSeleccionado && styles.exerciseCardActive]}
+                                        onPress={() => setOnboardingData(prev => ({ ...prev, inp_exercise_intensity: opcion.id }))}
+                                    >
+                                        <View style={styles.exerciseVisualContainer}>
+                                            <View style={[styles.energyBar, { height: 10 }, opcion.level >= 0 ? styles.energyBarActive : null]} />
+                                            <View style={[styles.energyBar, { height: 18 }, opcion.level >= 1 ? styles.energyBarActive : null]} />
+                                            <View style={[styles.energyBar, { height: 26 }, opcion.level >= 2 ? styles.energyBarActive : null]} />
+                                            <View style={[styles.energyBar, { height: 34 }, opcion.level >= 3 ? styles.energyBarActive : null]} />
+                                        </View>
+                                        <View style={styles.exerciseTextContainer}>
+                                            <Text style={[styles.exerciseTitle, esSeleccionado && styles.exerciseTitleActive]}>{opcion.title}</Text>
+                                            <Text style={styles.exerciseSubtitle}>{opcion.subtitle}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                );
+
+            case 13:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Nivel de Estrés</Text>
+                        <Text style={styles.questionSubtitle}>¿Consideras que vives con niveles de estrés crónico o fatiga mental últimamente?</Text>
+
+                        {/* Custom Switch Elegante */}
+                        <View style={styles.stressContainer}>
+                            <Text style={styles.stressLabel}>{onboardingData.inp_stress_level ? 'Sí, bastante' : 'No, estoy tranquila'}</Text>
+                            <TouchableOpacity
+                                style={[styles.customSwitch, onboardingData.inp_stress_level ? styles.switchOn : styles.switchOff]}
+                                activeOpacity={0.9}
+                                onPress={() => setOnboardingData(prev => ({ ...prev, inp_stress_level: !prev.inp_stress_level }))}
+                            >
+                                <View style={[styles.switchCircle, onboardingData.inp_stress_level ? styles.switchCircleOn : styles.switchCircleOff]} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+
+            case 14:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Patrón de Digestión</Text>
+                        <Text style={styles.questionSubtitle}>¿Cómo se comporta tu digestión en los días previos o durante tu periodo?</Text>
+
+                        {/* Selector igual a la pregunta 2 */}
+                        <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
+                            {opcionesDigestion.map((opcion) => {
+                                const esSeleccionado = onboardingData.inp_digestion_pattern === opcion;
+                                return (
+                                    <TouchableOpacity
+                                        key={opcion}
+                                        style={[styles.optionRow, esSeleccionado && styles.optionRowActive]}
+                                        onPress={() => setOnboardingData(prev => ({ ...prev, inp_digestion_pattern: opcion }))}
+                                    >
+                                        <Text style={[styles.optionText, esSeleccionado && styles.optionTextActive]}>{opcion}</Text>
+                                        {esSeleccionado && <View style={styles.radioCheck} />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                );
+
+            case 15:
+                return (
+                    <View style={styles.questionWrapper}>
+                        <Text style={styles.questionTitle}>Calidad de Sueño</Text>
+                        <Text style={styles.questionSubtitle}>¿Cómo describirías tu calidad de sueño en general?</Text>
+
+                        {/* Acomodo HORIZONTAL de 3 tarjetas */}
+                        <View style={styles.sleepRowContainer}>
+                            {opcionesSueno.map((opcion) => {
+                                const esSeleccionado = onboardingData.inp_sleep_quality === opcion.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={opcion.id}
+                                        style={[styles.sleepCard, esSeleccionado && styles.sleepCardActive]}
+                                        onPress={() => setOnboardingData(prev => ({ ...prev, inp_sleep_quality: opcion.id }))}
+                                    >
+                                        {/* Contenedor Visual (Reemplaza el Emoji) */}
+                                        <View style={styles.sleepVisualWrapper}>
+                                            {opcion.level === 3 && (
+                                                <View style={styles.sleepVisualRow}>
+                                                    <View style={styles.moonFull} />
+                                                    <View style={styles.starDot} /><View style={styles.starDot} /><View style={styles.starDot} />
+                                                </View>
+                                            )}
+                                            {opcion.level === 2 && (
+                                                <View style={styles.sleepVisualRow}>
+                                                    <View style={styles.moonHalf} />
+                                                    <View style={styles.starDot} /><View style={styles.starDot} />
+                                                </View>
+                                            )}
+                                            {opcion.level === 1 && (
+                                                <View style={styles.sleepVisualRow}>
+                                                    <View style={styles.moonCrescent} />
+                                                    <View style={styles.starDot} />
+                                                </View>
+                                            )}
+                                        </View>
+
+                                        <Text style={[styles.sleepLabel, esSeleccionado && styles.sleepLabelActive]}>{opcion.label}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        {/* Texto descriptivo completo debajo */}
+                        <Text style={styles.sleepDescriptionText}>
+                            {onboardingData.inp_sleep_quality || 'Selecciona una opción'}
+                        </Text>
+                    </View>
+                );
 
             default:
                 return (
@@ -707,19 +855,42 @@ const styles = StyleSheet.create({
     checkboxText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, flex: 1 },
     checkboxTextActive: { color: '#FFFFFF', fontWeight: '600' },
 
-    // Pág 10: Chips (Síntomas) - AHORA TAMAÑO UNIFORME
-    chipsScrollContent: { paddingBottom: 20, width: '100%' },
-    chipsContainer: { flexDirection: 'column', width: '100%', gap: 10 },
-    chip: { backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', width: '100%', alignItems: 'center', justifyContent: 'center' },
-    chipActive: { backgroundColor: Colors.botones || '#6A5ACD', borderColor: Colors.botones || '#6A5ACD' },
-    chipText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 13, fontWeight: '500', textAlign: 'center' },
-    chipTextActive: { color: '#FFFFFF', fontWeight: 'bold' },
+    // Pág 12: Ejercicio (Tarjetas Visuales de Energía)
+    exerciseCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'transparent' },
+    exerciseCardActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD' },
+    exerciseVisualContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', width: 35, height: 35, marginRight: 16, paddingBottom: 2 },
+    energyBar: { width: 6, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 3 },
+    energyBarActive: { backgroundColor: Colors.botones || '#6A5ACD' },
+    exerciseTextContainer: { flex: 1 },
+    exerciseTitle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 15, fontWeight: 'bold', marginBottom: 4 },
+    exerciseTitleActive: { color: '#FFFFFF' },
+    exerciseSubtitle: { color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 },
 
-    // Pág 11: Radio Buttons (Migrañas)
-    radioRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 14, marginBottom: 8 },
-    radioRowActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)' },
-    radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', marginRight: 12, justifyContent: 'center', alignItems: 'center' },
-    radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.botones || '#6A5ACD' },
-    radioText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, flex: 1 },
-    radioTextActive: { color: '#FFFFFF', fontWeight: 'bold' }
+    // Pág 13: Estrés (Custom Switch)
+    stressContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
+    stressLabel: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', marginBottom: 30 },
+    customSwitch: { width: 100, height: 50, borderRadius: 25, padding: 4, justifyContent: 'center' },
+    switchOff: { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+    switchOn: { backgroundColor: Colors.botones || '#6A5ACD' },
+    switchCircle: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 3 },
+    switchCircleOff: { alignSelf: 'flex-start' },
+    switchCircleOn: { alignSelf: 'flex-end' },
+
+    // Pág 15: Sueño (Tarjetas Horizontales con Lunas/Estrellas)
+    sleepRowContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10 },
+    sleepCard: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 20, paddingVertical: 20, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: 'transparent' },
+    sleepCardActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD', transform: [{ scale: 1.05 }] },
+
+    sleepVisualWrapper: { height: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    sleepVisualRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap', justifyContent: 'center', width: 40 },
+
+    // Figuras geométricas simples y a prueba de errores
+    moonFull: { width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.botones || '#6A5ACD' },
+    moonHalf: { width: 14, height: 14, borderBottomLeftRadius: 14, borderTopLeftRadius: 14, backgroundColor: Colors.botones || '#6A5ACD' },
+    moonCrescent: { width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: Colors.botones || '#6A5ACD', borderTopColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: '-45deg' }] },
+    starDot: { width: 6, height: 6, backgroundColor: '#FFFFFF', transform: [{ rotate: '45deg' }], opacity: 0.8 },
+
+    sleepLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 12, fontWeight: '600' },
+    sleepLabelActive: { color: '#FFFFFF', fontWeight: 'bold' },
+    sleepDescriptionText: { color: Colors.botones || '#6A5ACD', fontSize: 14, textAlign: 'center', marginTop: 24, paddingHorizontal: 10, fontWeight: '500' }
 });

@@ -4,17 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 
-// 1. Reemplazamos storageService por tu servicio real de Firestore
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
 import {
     getMonthWithPhases,
     getMonthName,
-    getYear,
-    getTodayDay
+    getYear
 } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
 
-// 🌟 ESTANDARIZACIÓN: Unificamos los nombres de las 4 fases para que todo el código hable el mismo idioma
 const phases = {
     menstrual: Colors.menstrual,
     folicular: Colors.folicular,
@@ -42,33 +39,44 @@ export default function CalendarScreen() {
     const [monthDays, setMonthDays] = useState([]);
     const [monthName, setMonthName] = useState('');
     const [year, setYear] = useState(2026);
-    const [loading, setLoading] = useState(true); // Agregamos un estado de carga clínico
+    const [loading, setLoading] = useState(true);
+
+    const [userProfile, setUserProfile] = useState(null);
+    const [currentMonth, setCurrentMonth] = useState(dayjs());
 
     useEffect(() => {
-        const loadCalendarData = async () => {
+        const loadUserProfile = async () => {
             try {
                 const resultado = await obtenerPerfilUsuario();
-
                 if (resultado.success && resultado.data) {
-                    const userProfile = resultado.data; // Obtenemos el JSON completo desde Firestore
-
-                    const today = dayjs();
-                    setMonthName(getMonthName(today));
-                    setYear(getYear(today));
-
-                    // 🌟 CAMBIO CLAVE: Le pasamos el perfil completo del usuario al helper
-                    const daysWithPhases = getMonthWithPhases(today, userProfile);
-                    setMonthDays(daysWithPhases);
+                    setUserProfile(resultado.data);
                 }
             } catch (error) {
-                console.error('Error cargando datos del calendario:', error);
+                console.error('Error cargando datos del usuario:', error);
             } finally {
                 setLoading(false);
             }
         };
-
-        loadCalendarData();
+        loadUserProfile();
     }, []);
+
+    useEffect(() => {
+        if (userProfile) {
+            setMonthName(getMonthName(currentMonth));
+            setYear(getYear(currentMonth));
+
+            const daysWithPhases = getMonthWithPhases(currentMonth, userProfile);
+            setMonthDays(daysWithPhases);
+        }
+    }, [currentMonth, userProfile]);
+
+    const handlePrevMonth = () => {
+        setCurrentMonth(currentMonth.subtract(1, 'month'));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(currentMonth.add(1, 'month'));
+    };
 
     if (loading) {
         return (
@@ -97,7 +105,7 @@ export default function CalendarScreen() {
                             onPress={() => {
                                 setFilters({
                                     ...filters,
-                                    [key]: !filters[key], // Prende y apaga la fase reduciendo el ruido visual
+                                    [key]: !filters[key],
                                 });
                             }}
                         >
@@ -110,7 +118,19 @@ export default function CalendarScreen() {
 
                 {/* Tarjeta del calendario */}
                 <View style={styles.calendarCard}>
-                    <Text style={styles.monthTitle}>{monthName} {year}</Text>
+
+                    {/* Contenedor de título con flechas de navegación */}
+                    <View style={styles.navigationHeader}>
+                        <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
+                            <Text style={styles.arrowText}>◀</Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.monthTitle}>{monthName} {year}</Text>
+
+                        <TouchableOpacity onPress={handleNextMonth} style={styles.navArrow}>
+                            <Text style={styles.arrowText}>▶</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Cabecera de días */}
                     <View style={styles.weekdaysContainer}>
@@ -122,26 +142,41 @@ export default function CalendarScreen() {
                     {/* Matriz de días */}
                     <View style={styles.calendarGrid}>
                         {monthDays.map((dayItem, index) => {
-                            const phase = dayItem.phase; // Viene directamente calculado desde tu helper genérico
-
-                            // Si la fase está activa en los filtros superiores, se pinta de su color clínico; si no, queda oscura.
+                            const phase = dayItem.phase;
                             const mostrarColor = phase && filters[phase];
-                            const circleColor = mostrarColor ? phases[phase] : '#252542';
+
+                            // 🌟 CAMBIO VISUAL 2: Si es el día de ovulación exacto, forzamos un azul/morado eléctrico destacado
+                            let circleColor = mostrarColor ? phases[phase] : '#252542';
+                            if (dayItem.isOvulationDay && mostrarColor) {
+                                circleColor = '#6366F1'; // Azul Índigo Eléctrico potente
+                            }
 
                             return (
                                 <View key={index} style={styles.dayCell}>
                                     {dayItem.day ? (
-                                        <View
-                                            style={[
-                                                styles.dayCircle,
-                                                {
-                                                    backgroundColor: circleColor,
-                                                    borderWidth: dayItem.isToday ? 2 : 0,
-                                                    borderColor: dayItem.isToday ? 'white' : 'transparent',
-                                                },
-                                            ]}
-                                        >
-                                            <Text style={styles.dayText}>{dayItem.day}</Text>
+                                        <View style={styles.cellContainer}>
+
+                                            {/* Círculo base del día */}
+                                            <View
+                                                style={[
+                                                    styles.dayCircle,
+                                                    {
+                                                        backgroundColor: circleColor,
+                                                        borderWidth: dayItem.isToday ? 2 : 0,
+                                                        borderColor: dayItem.isToday ? 'white' : 'transparent',
+                                                    },
+                                                    // Si es el pico de ovulación, agregamos un borde exterior estilizado de destaque
+                                                    dayItem.isOvulationDay && mostrarColor && styles.ovulationPeakRing
+                                                ]}
+                                            >
+                                                <Text style={styles.dayText}>{dayItem.day}</Text>
+                                            </View>
+
+                                            {/* 🌟 CAMBIO VISUAL 1: Día del ciclo limpio flotando ABAJO del círculo */}
+                                            <Text style={styles.cycleDayText}>
+                                                {dayItem.cycleDay}
+                                            </Text>
+
                                         </View>
                                     ) : (
                                         <View style={styles.dayCell} />
@@ -158,7 +193,6 @@ export default function CalendarScreen() {
     );
 }
 
-// Arquitectura del cálculo responsivo de la cuadrícula
 const screenWidth = Dimensions.get('window').width;
 const cardPadding = 20;
 const gridWidth = screenWidth - (20 * 2) - (cardPadding * 2);
@@ -172,11 +206,51 @@ const styles = StyleSheet.create({
     filter: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
     filterText: { color: 'white', fontWeight: '600', fontSize: 14 },
     calendarCard: { backgroundColor: Colors.tarjetas || '#1A1A30', borderRadius: 20, padding: cardPadding, width: '100%', alignItems: 'center' },
-    monthTitle: { color: 'white', fontSize: 18, fontWeight: '700', marginBottom: 20, alignSelf: 'flex-start', paddingLeft: 5 },
+
+    navigationHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 20,
+    },
+    navArrow: {
+        padding: 10,
+        backgroundColor: '#252542',
+        borderRadius: 10,
+    },
+    arrowText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    monthTitle: { color: 'white', fontSize: 18, fontWeight: '700', textTransform: 'capitalize' },
+
     weekdaysContainer: { flexDirection: 'row', width: '100%', marginBottom: 15, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 10 },
     weekdayText: { width: cellWidth, textAlign: 'center', color: Colors.textoSecundario || '#A0A0C0', fontWeight: '600', fontSize: 13 },
     calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', width: '100%' },
-    dayCell: { width: cellWidth, height: cellWidth, justifyContent: 'center', ExtAlign: 'center', alignItems: 'center', marginBottom: 8 },
+
+    // Le aumentamos la altura a la celda para dar espacio al número de ciclo flotante
+    dayCell: { width: cellWidth, height: cellWidth + 12, justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
+    cellContainer: { alignItems: 'center', justifyContent: 'center' },
     dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-    dayText: { color: 'white', fontWeight: '600', fontSize: 14 },
+    dayText: { color: 'white', fontWeight: '700', fontSize: 14 },
+
+    // Anillo exterior estilizado de destaque clínico para el día exacto de ovulación
+    ovulationPeakRing: {
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 4,
+    },
+
+    // Estilo del número de ciclo flotando abajo (Limpio, atenuado y sin letras extra)
+    cycleDayText: {
+        color: 'rgba(255,255,255,0.4)',
+        fontSize: 10,
+        fontWeight: '500',
+        marginTop: 4
+    },
 });

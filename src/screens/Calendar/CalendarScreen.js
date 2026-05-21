@@ -1,29 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
-import { getLastPeriodDate, getCycleLength } from '../../services/storageService';
-import { 
+
+// 1. Reemplazamos storageService por tu servicio real de Firestore
+import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
+import {
     getMonthWithPhases,
     getMonthName,
     getYear,
-    getTodayDay 
+    getTodayDay
 } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
-import { auth } from '../../services/firebaseConfig';
 
+// 🌟 ESTANDARIZACIÓN: Unificamos los nombres de las 4 fases para que todo el código hable el mismo idioma
 const phases = {
     menstrual: Colors.menstrual,
-    follicular: Colors.folicular,
-    ovulacion: Colors.ovulacion,
+    folicular: Colors.folicular,
+    ovulatoria: Colors.ovulacion,
     lutea: Colors.lutea,
 };
 
-// Diccionario para mostrar los textos bonitos en español como en la imagen
 const phaseLabels = {
     menstrual: 'Menstrual',
-    follicular: 'Folicular',
-    ovulacion: 'Ovulatoria',
+    folicular: 'Folicular',
+    ovulatoria: 'Ovulatoria',
     lutea: 'Lútea',
 };
 
@@ -32,64 +34,56 @@ const weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 export default function CalendarScreen() {
     const [filters, setFilters] = useState({
         menstrual: true,
-        follicular: true,
-        ovulacion: true,
+        folicular: true,
+        ovulatoria: true,
         lutea: true,
     });
 
     const [monthDays, setMonthDays] = useState([]);
-    const [monthName, setMonthName] = useState('Mayo');
+    const [monthName, setMonthName] = useState('');
     const [year, setYear] = useState(2026);
-    const [todayDay, setTodayDay] = useState(getTodayDay());
-    const [lastPeriodDate, setLastPeriodDate] = useState(null);
-    const [cycleLength, setCycleLength] = useState(28);
+    const [loading, setLoading] = useState(true); // Agregamos un estado de carga clínico
 
     useEffect(() => {
         const loadCalendarData = async () => {
             try {
-                const userId = auth.currentUser?.uid;
-                const lastPeriodResult = await getLastPeriodDate(userId);
-                const cycleResult = await getCycleLength(userId);
+                const resultado = await obtenerPerfilUsuario();
 
-                if (lastPeriodResult.success && lastPeriodResult.data) {
-                    setLastPeriodDate(lastPeriodResult.data);
-                    setCycleLength(cycleResult.data || 28);
+                if (resultado.success && resultado.data) {
+                    const userProfile = resultado.data; // Obtenemos el JSON completo desde Firestore
 
                     const today = dayjs();
                     setMonthName(getMonthName(today));
                     setYear(getYear(today));
-                    setTodayDay(getTodayDay());
 
-                    // Calcular los días del mes con fases
-                    const daysWithPhases = getMonthWithPhases(today, lastPeriodResult.data, cycleResult.data || 28);
+                    // 🌟 CAMBIO CLAVE: Le pasamos el perfil completo del usuario al helper
+                    const daysWithPhases = getMonthWithPhases(today, userProfile);
                     setMonthDays(daysWithPhases);
                 }
             } catch (error) {
-                console.error('Error loading calendar data:', error);
+                console.error('Error cargando datos del calendario:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
         loadCalendarData();
     }, []);
 
-    const getPhase = day => {
-        if (day <= 5) return 'menstrual';
-        if (day <= 13) return 'follicular';
-        if (day <= 16) return 'ovulatory';
-        return 'luteal';
-    };
-
-    const getDayPhase = (dayItem) => {
-        if (!dayItem.day) return null;
-        return dayItem.phase;
-    };
+    if (loading) {
+        return (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={Colors.botones || '#6A5ACD'} />
+            </SafeAreaView>
+        );
+    }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <Text style={styles.title}>Calendario</Text>
 
-                {/* Filtros horizontales idénticos a la imagen */}
+                {/* Filtros horizontales dinámicos */}
                 <View style={styles.filters}>
                     {Object.keys(filters).map(key => (
                         <TouchableOpacity
@@ -103,7 +97,7 @@ export default function CalendarScreen() {
                             onPress={() => {
                                 setFilters({
                                     ...filters,
-                                    [key]: !filters[key],
+                                    [key]: !filters[key], // Prende y apaga la fase reduciendo el ruido visual
                                 });
                             }}
                         >
@@ -113,29 +107,26 @@ export default function CalendarScreen() {
                         </TouchableOpacity>
                     ))}
                 </View>
-                
-                {/* Contenedor principal del calendario estilo tarjeta */}
+
+                {/* Tarjeta del calendario */}
                 <View style={styles.calendarCard}>
-                    {/* Encabezado del mes */}
                     <Text style={styles.monthTitle}>{monthName} {year}</Text>
 
-                    {/* Días de la semana (L, M, M, J, V, S, D) */}
+                    {/* Cabecera de días */}
                     <View style={styles.weekdaysContainer}>
                         {weekdays.map((day, index) => (
                             <Text key={index} style={styles.weekdayText}>{day}</Text>
                         ))}
                     </View>
 
-                    {/* Cuadrícula de los días numéricos */}
+                    {/* Matriz de días */}
                     <View style={styles.calendarGrid}>
                         {monthDays.map((dayItem, index) => {
-                            const phase = getDayPhase(dayItem);
-                            const phaseColor = phase ? 
-                                (phase === 'menstrual' ? Colors.menstrual :
-                                    phase === 'follicular' ? Colors.folicular :
-                                    phase === 'ovulacion' ? Colors.ovulacion :
-                                    Colors.lutea) 
-                                : '#252542';
+                            const phase = dayItem.phase; // Viene directamente calculado desde tu helper genérico
+
+                            // Si la fase está activa en los filtros superiores, se pinta de su color clínico; si no, queda oscura.
+                            const mostrarColor = phase && filters[phase];
+                            const circleColor = mostrarColor ? phases[phase] : '#252542';
 
                             return (
                                 <View key={index} style={styles.dayCell}>
@@ -144,7 +135,7 @@ export default function CalendarScreen() {
                                             style={[
                                                 styles.dayCircle,
                                                 {
-                                                    backgroundColor: filters[phase] ? phaseColor : '#252542',
+                                                    backgroundColor: circleColor,
                                                     borderWidth: dayItem.isToday ? 2 : 0,
                                                     borderColor: dayItem.isToday ? 'white' : 'transparent',
                                                 },
@@ -167,97 +158,25 @@ export default function CalendarScreen() {
     );
 }
 
-// Cálculo matemático para que los 7 días ocupen exactamente el ancho disponible de forma simétrica
+// Arquitectura del cálculo responsivo de la cuadrícula
 const screenWidth = Dimensions.get('window').width;
 const cardPadding = 20;
-const gridWidth = screenWidth - (20 * 2) - (cardPadding * 2); // Ajustado al padding de la tarjeta
+const gridWidth = screenWidth - (20 * 2) - (cardPadding * 2);
 const cellWidth = gridWidth / 7;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.fondo,
-    },
-    scrollContent: {
-        padding: 20,
-        paddingBottom: 130,
-    },
-    title: {
-        color: 'white',
-        fontSize: 30,
-        fontWeight: 'bold',
-        marginBottom: 25,
-        marginTop: 10,
-    },
-    filters: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 30,
-        width: '100%',
-    },
-    filter: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    filterText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    calendarCard: {
-        backgroundColor: Colors.tarjetas || '#1A1A30', // Usa el color de fondo de tus inputs/tarjetas
-        borderRadius: 20,
-        padding: cardPadding,
-        width: '100%',
-        alignItems: 'center',
-    },
-    monthTitle: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 20,
-        alignSelf: 'flex-start',
-        paddingLeft: 5,
-    },
-    weekdaysContainer: {
-        flexDirection: 'row',
-        width: '100%',
-        marginBottom: 15,
-        borderBottomWidth: 0.5,
-        borderBottomColor: 'rgba(255,255,255,0.1)',
-        paddingBottom: 10,
-    },
-    weekdayText: {
-        width: cellWidth,
-        textAlign: 'center',
-        color: Colors.textoSecundario || '#A0A0C0',
-        fontWeight: '600',
-        fontSize: 13,
-    },
-    calendarGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        width: '100%',
-    },
-    dayCell: {
-        width: cellWidth,
-        height: cellWidth, // Celda cuadrada perfecta
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    dayCircle: {
-        width: 38, // Tamaño estilizado para que respire espacio entre círculos
-        height: 38,
-        borderRadius: 19,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    dayText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
+    container: { flex: 1, backgroundColor: Colors.fondo || '#0D0D1E' },
+    scrollContent: { padding: 20, paddingBottom: 130 },
+    title: { color: 'white', fontSize: 30, fontWeight: 'bold', marginBottom: 25, marginTop: 10 },
+    filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 30, width: '100%' },
+    filter: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+    filterText: { color: 'white', fontWeight: '600', fontSize: 14 },
+    calendarCard: { backgroundColor: Colors.tarjetas || '#1A1A30', borderRadius: 20, padding: cardPadding, width: '100%', alignItems: 'center' },
+    monthTitle: { color: 'white', fontSize: 18, fontWeight: '700', marginBottom: 20, alignSelf: 'flex-start', paddingLeft: 5 },
+    weekdaysContainer: { flexDirection: 'row', width: '100%', marginBottom: 15, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 10 },
+    weekdayText: { width: cellWidth, textAlign: 'center', color: Colors.textoSecundario || '#A0A0C0', fontWeight: '600', fontSize: 13 },
+    calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', width: '100%' },
+    dayCell: { width: cellWidth, height: cellWidth, justifyContent: 'center', ExtAlign: 'center', alignItems: 'center', marginBottom: 8 },
+    dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+    dayText: { color: 'white', fontWeight: '600', fontSize: 14 },
 });

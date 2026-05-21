@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
-import {ScrollView, View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../styles/colors';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
@@ -34,84 +35,84 @@ export default function CycleConfigScreen() {
 
     const toggleSymptom = symptom => {
         if (selectedSymptoms.includes(symptom)) {
-        setSelectedSymptoms(
-            selectedSymptoms.filter(
-            item => item !== symptom,
-            ),
-        );
+            setSelectedSymptoms(
+                selectedSymptoms.filter(
+                    item => item !== symptom,
+                ),
+            );
         } else {
-        setSelectedSymptoms([
-            ...selectedSymptoms,
-            symptom,
-        ]);
+            setSelectedSymptoms([
+                ...selectedSymptoms,
+                symptom,
+            ]);
         }
     };
 
     return (
         <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.title}>
-            Configurar Ciclo
-            </Text>
-
-            <Text style={styles.sectionTitle}>
-            Estado de ánimo
-            </Text>
-
-            <View style={styles.row}>
-            {moods.map(mood => (
-                <TouchableOpacity
-                key={mood}
-                style={[
-                    styles.option,
-                    {
-                    backgroundColor:
-                        selectedMood === mood
-                        ? Colors.folicular
-                        : Colors.fondo,
-                    },
-                ]}
-                onPress={() =>
-                    setSelectedMood(mood)
-                }>
-                <Text style={styles.optionText}>
-                    {mood}
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <Text style={styles.title}>
+                    Configurar Ciclo
                 </Text>
-                </TouchableOpacity>
-            ))}
-            </View>
 
-            <Text style={styles.sectionTitle}>
-            Síntomas
-            </Text>
-
-            <View style={styles.row}>
-            {symptoms.map(symptom => (
-                <TouchableOpacity
-                key={symptom}
-                style={[
-                    styles.option,
-                    {
-                    backgroundColor:
-                        selectedSymptoms.includes(
-                        symptom,
-                        )
-                        ? Colors.menstrual
-                        : Colors.fondo,
-                    },
-                ]}
-                onPress={() =>
-                    toggleSymptom(symptom)
-                }>
-                <Text style={styles.optionText}>
-                    {symptom}
+                <Text style={styles.sectionTitle}>
+                    Estado de ánimo
                 </Text>
-                </TouchableOpacity>
-            ))}
-            </View>
-        </ScrollView>
 
-        <BottomNavigation />
+                <View style={styles.row}>
+                    {moods.map(mood => (
+                        <TouchableOpacity
+                            key={mood}
+                            style={[
+                                styles.option,
+                                {
+                                    backgroundColor:
+                                        selectedMood === mood
+                                            ? Colors.folicular
+                                            : Colors.fondo,
+                                },
+                            ]}
+                            onPress={() =>
+                                setSelectedMood(mood)
+                            }>
+                            <Text style={styles.optionText}>
+                                {mood}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <Text style={styles.sectionTitle}>
+                    Síntomas
+                </Text>
+
+                <View style={styles.row}>
+                    {symptoms.map(symptom => (
+                        <TouchableOpacity
+                            key={symptom}
+                            style={[
+                                styles.option,
+                                {
+                                    backgroundColor:
+                                        selectedSymptoms.includes(
+                                            symptom,
+                                        )
+                                            ? Colors.menstrual
+                                            : Colors.fondo,
+                                },
+                            ]}
+                            onPress={() =>
+                                toggleSymptom(symptom)
+                            }>
+                            <Text style={styles.optionText}>
+                                {symptom}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </ScrollView>
+
+            <BottomNavigation />
         </SafeAreaView>
     );
 }

@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: "AIzaSyDCMK9Y9Scry8bWZEKlIljJsbohUUDCIaA",
@@ -33,5 +33,24 @@ if (yaExisteApp) {
         persistence: getReactNativePersistence(AsyncStorage)
     });
 }
+
+export const obtenerPerfilUsuario = async () => {
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("No hay usuario autenticado");
+
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return { success: true, data: docSnap.data() };
+        } else {
+            return { success: false, error: "No se encontraron datos médicos." };
+        }
+    } catch (error) {
+        console.error("Error al obtener perfil:", error);
+        return { success: false, error: error.message };
+    }
+};
 
 export { app, auth, db };

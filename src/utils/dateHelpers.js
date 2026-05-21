@@ -1,92 +1,142 @@
 import dayjs from 'dayjs';
 
-// Obtener el día actual del ciclo basado en la fecha del último período
-export const getCurrentCycleDay = (lastPeriodDate, cycleLength = 28) => {
-    const last = dayjs(lastPeriodDate);
-    const today = dayjs();
-    const diffDays = today.diff(last, 'day');
-    return (diffDays % cycleLength) + 1;
-};
+/**
+ * CALC_01 a CALC_04: Motor de Predicción Matemática Definitivo de Bloom
+ */
+export const getPhaseForDay = (cycleDay, userProfile) => {
+    if (!userProfile) return null;
 
-// Obtener la fase de un día específico del ciclo
-export const getPhaseForDay = (day) => {
-    if (day >= 1 && day <= 5) return 'menstrual';
-    if (day >= 6 && day <= 13) return 'follicular';
-    if (day >= 14 && day <= 16) return 'ovulacion';
+    const M = Number(userProfile.inp_period_length) || 5;
+    const totalLength = Number(userProfile.inp_cycle_length) || 28;
+    const age = Number(userProfile.inp_age) || 25;
+    const profile = userProfile.user_profile || 'NATURAL';
+    const esIrregular = userProfile.flag_regularidad === 'IRREGULAR';
+
+    // 🔴 CASO 1 (CALC_01): Perfil ARTIFICIAL
+    if (profile === 'ARTIFICIAL') {
+        if (cycleDay <= M) return 'menstrual';
+        return null; // El resto del mes se muestra neutro/gris
+    }
+
+    // Inicializamos las variables métricas del ciclo
+    let duracionMenstrual = M;
+    let duracionFolicular = 0;
+    let diaOvulacion = 0;
+    let duracionLutea = 0;
+
+    // 🟢 CASO 2 (CALC_02): NATURAL y menos de 40 años
+    if (profile === 'NATURAL' && age < 40) {
+        duracionLutea = 14; // Fijos
+        diaOvulacion = totalLength - 14;
+        duracionFolicular = diaOvulacion - duracionMenstrual; // ¡Aquí está tu sobrante corregido!
+    }
+
+    // 🟡 CASO 3 (CALC_03): NATURAL y entre 40 y 44 años (Ajuste Edad Temprana)
+    else if (profile === 'NATURAL' && age >= 40 && age <= 44) {
+        duracionFolicular = 10.4; // Fijos
+        diaOvulacion = duracionMenstrual + duracionFolicular;
+        duracionLutea = totalLength - duracionMenstrual - duracionFolicular;
+    }
+
+    // 🟠 CASO 4 (CALC_04): TRANSICIÓN Avanzada o NATURAL mayor a 45 años
+    else if (profile === 'TRANSITION' || age >= 45) {
+        duracionFolicular = 8.3; // Fijos
+        diaOvulacion = duracionMenstrual + duracionFolicular;
+        duracionLutea = totalLength - duracionMenstrual - duracionFolicular;
+    }
+
+    // Redondeamos el día estimado de ovulación para posicionarlo en la cuadrícula
+    const ovDayInt = Math.round(diaOvulacion);
+
+    // 📊 CALC_05: Margen de la Ventana Fémina (Criterio FIGO de Regularidad)
+    // Si es irregular, "difuminamos" expandiendo a 6 días; si es regular, se mantiene en 3 días.
+    const rangoVentana = esIrregular ? 3 : 1;
+    const ovStart = ovDayInt - rangoVentana;
+    const ovEnd = ovDayInt + (esIrregular ? 2 : 1);
+
+    // --- CLASIFICACIÓN DE CASILLAS DEL CALENDARIO ---
+    if (cycleDay <= duracionMenstrual) {
+        return 'menstrual';
+    }
+    if (cycleDay < ovStart) {
+        return 'folicular';
+    }
+    if (cycleDay >= ovStart && cycleDay <= ovEnd) {
+        return 'ovulatoria';
+    }
     return 'lutea';
 };
 
-// Obtener el número de días en un mes
-export const getDaysInMonth = (date) => {
-    return dayjs(date).daysInMonth();
-};
+export const getCycleDayForDate = (date, lastPeriodDate, cycleLength = 28) => {
+    if (!lastPeriodDate) return 1;
 
-// Obtener el primer día de la semana del mes (0=domingo, 1=lunes, etc)
-export const getFirstDayOfMonth = (date) => {
-    return dayjs(date).startOf('month').day();
-};
-
-// Obtener nombre del mes en español
-export const getMonthName = (date) => {
-    const months = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    return months[dayjs(date).month()];
-};
-
-// Obtener el año
-export const getYear = (date) => {
-    return dayjs(date).year();
-};
-
-// Obtener la fecha actual formateada
-export const getTodayFormatted = () => {
-    return dayjs().format('YYYY-MM-DD');
-};
-
-// Obtener el día del mes actual
-export const getTodayDay = () => {
-    return dayjs().date();
-};
-
-// Obtener los días del mes con información de fase
-export const getMonthWithPhases = (date, lastPeriodDate, cycleLength = 28) => {
-    const month = dayjs(date).month();
-    const year = dayjs(date).year();
-    const daysInMonth = dayjs(date).daysInMonth();
-    const firstDay = dayjs(date).startOf('month').day();
-    
-    const days = [];
-    
-    // Agregar celdas vacías para los días anteriores del mes
-    for (let i = 0; i < firstDay; i++) {
-        days.push({ day: null, phase: null, isToday: false });
+    let fechaLmpNormalizada = lastPeriodDate;
+    if (typeof lastPeriodDate.toDate === 'function') {
+        fechaLmpNormalizada = lastPeriodDate.toDate();
+    } else if (lastPeriodDate.seconds) {
+        fechaLmpNormalizada = new Date(lastPeriodDate.seconds * 1000);
     }
-    
-    // Agregar los días del mes
+
+    // 🔥 SOLUCIÓN AL BUG: Forzamos a que ambas fechas se comparen al inicio del día (00:00)
+    const last = dayjs(fechaLmpNormalizada).startOf('day');
+    const target = dayjs(date).startOf('day');
+
+    if (!last.isValid()) return 1;
+
+    const diffDays = target.diff(last, 'day');
+    return ((((diffDays % cycleLength) + cycleLength) % cycleLength) + 1);
+};
+
+export const getMonthWithPhases = (date, userProfile) => {
+    if (!userProfile) return [];
+    const lastPeriodDate = userProfile.inp_lmp_date;
+    const cycleLength = userProfile.inp_cycle_length || 28;
+    const M = Number(userProfile.inp_period_length) || 5;
+    const age = Number(userProfile.inp_age) || 25;
+    const profile = userProfile.user_profile || 'NATURAL';
+
+    // Calcular el día exacto de la ovulación para el ícono
+    let diaOvulacionExacto = cycleLength - 14;
+    if (profile === 'NATURAL' && age >= 40 && age <= 44) diaOvulacionExacto = M + 10.4;
+    else if (profile === 'TRANSITION' || age >= 45) diaOvulacionExacto = M + 8.3;
+    const ovDayInt = Math.round(diaOvulacionExacto);
+
+    const daysInMonth = dayjs(date).daysInMonth();
+    let firstDay = dayjs(date).startOf('month').day();
+    firstDay = firstDay === 0 ? 6 : firstDay - 1;
+
+    const days = [];
+
+    for (let i = 0; i < firstDay; i++) {
+        days.push({ day: null, phase: null, isToday: false, isOvulationDay: false });
+    }
+
+    const inicioMes = dayjs(date).startOf('month');
+
     for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-        const currentDate = dayjs().year(year).month(month).date(dayNum);
+        const currentDate = inicioMes.date(dayNum);
         const cycleDay = getCycleDayForDate(currentDate, lastPeriodDate, cycleLength);
-        const phase = getPhaseForDay(cycleDay);
+        const phase = getPhaseForDay(cycleDay, userProfile);
         const isToday = currentDate.isSame(dayjs(), 'day');
-        
+
+        // 🥚 Validamos si este día del mes coincide con el pico de ovulación
+        const isOvulationDay = profile !== 'ARTIFICIAL' && cycleDay === ovDayInt;
+
         days.push({
             day: dayNum,
             date: currentDate,
             cycleDay: cycleDay,
             phase: phase,
             isToday: isToday,
+            isOvulationDay: isOvulationDay,
         });
     }
-    
     return days;
 };
 
-// Calcular el día del ciclo para una fecha específica
-export const getCycleDayForDate = (date, lastPeriodDate, cycleLength = 28) => {
-    const last = dayjs(lastPeriodDate);
-    const target = dayjs(date);
-    const diffDays = target.diff(last, 'day');
-    return (diffDays % cycleLength) + 1;
+export const getMonthName = (date) => {
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return months[dayjs(date).month()];
 };
+export const getYear = (date) => dayjs(date).year();
+export const getTodayDay = () => dayjs().date();

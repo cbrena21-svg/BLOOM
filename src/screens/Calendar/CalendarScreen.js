@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,8 +8,7 @@ import {
     Dimensions,
     ActivityIndicator,
     Alert,
-    Image, // 🌟 Para el logo
-    Animated
+    Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
@@ -147,7 +146,7 @@ export default function CalendarScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
 
-            {/* 🌟 LOGO BLOOM SUPERIOR */}
+            {/* LOGO BLOOM SUPERIOR (Más grande) */}
             <View style={styles.logoContainer}>
                 <Image
                     source={require('../../../assets/icons/Group_35.png')}
@@ -167,9 +166,12 @@ export default function CalendarScreen() {
                 />
             )}
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
 
-                {/* 🌟 FILTROS DESLIZABLES HORIZONTALES */}
+                {/* FILTROS DESLIZABLES (Un poco más robustos y grandes) */}
                 <View style={styles.filterWrapper}>
                     <ScrollView
                         horizontal
@@ -192,71 +194,87 @@ export default function CalendarScreen() {
                     </ScrollView>
                 </View>
 
-                {/* HEADER DE NAVEGACIÓN */}
-                <View style={styles.navigationHeader}>
-                    <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
-                        <Text style={styles.arrowText}>◀</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.monthTitle}>{monthName} {year}</Text>
-                    <TouchableOpacity onPress={handleNextMonth} style={styles.navArrow}>
-                        <Text style={styles.arrowText}>▶</Text>
-                    </TouchableOpacity>
-                </View>
+                {/* BLOQUE DEL CALENDARIO (Ahora fluye naturalmente hacia arriba) */}
+                <View style={styles.calendarBlockContainer}>
 
-                {/* CALENDARIO */}
-                <View style={styles.calendarCard}>
-                    <View style={styles.weekdaysContainer}>
-                        {weekdays.map((day, index) => (
-                            <Text key={index} style={styles.weekdayText}>{day}</Text>
-                        ))}
+                    {/* HEADER DE NAVEGACIÓN */}
+                    <View style={styles.navigationHeader}>
+                        <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
+                            <Text style={styles.arrowText}>◀</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.monthTitle}>{monthName} {year}</Text>
+                        <TouchableOpacity onPress={handleNextMonth} style={styles.navArrow}>
+                            <Text style={styles.arrowText}>▶</Text>
+                        </TouchableOpacity>
                     </View>
 
-                    <View style={styles.calendarGrid}>
-                        {monthDays.map((dayItem, index) => {
-                            const phase = dayItem.phase;
-                            const mostrarColor = phase && filters[phase];
-                            let circleColor = mostrarColor ? phases[phase] : 'transparent';
+                    {/* CALENDARIO */}
+                    <View style={styles.calendarCard}>
+                        <View style={styles.weekdaysContainer}>
+                            {weekdays.map((day, index) => (
+                                <Text key={index} style={styles.weekdayText}>{day}</Text>
+                            ))}
+                        </View>
 
-                            return (
-                                <View key={index} style={styles.dayCell}>
-                                    {dayItem.day ? (
-                                        <View style={styles.cellContent}>
+                        <View style={styles.calendarGrid}>
+                            {monthDays.map((dayItem, index) => {
+                                const phase = dayItem.phase;
+                                const mostrarColor = phase && filters[phase];
+                                const basePhaseColor = phases[phase] || 'rgba(255,255,255,0.2)';
+                                let circleColor = mostrarColor ? phases[phase] : 'transparent';
 
-                                            {/* 🌟 DÍA DEL CICLO (Esquina) */}
-                                            <Text style={styles.cycleDayCorner}>
-                                                {dayItem.cycleDay}
-                                            </Text>
+                                return (
+                                    <View key={index} style={styles.dayCell}>
+                                        {dayItem.day ? (
+                                            <View style={styles.cellContent}>
 
-                                            {/* Círculo del día */}
-                                            <View style={[
-                                                styles.dayCircle,
-                                                { backgroundColor: circleColor },
-                                                dayItem.isToday && styles.todayHighlight,
-                                            ]}>
-                                                <Text style={[styles.dayText, dayItem.isToday && { color: 'white' }]}>
-                                                    {dayItem.day}
+                                                {/* DÍA DEL CICLO */}
+                                                <Text style={styles.cycleDayCorner}>
+                                                    {dayItem.cycleDay}
                                                 </Text>
-                                            </View>
 
-                                            {/* 🌟 LA LUNA DE OVULACIÓN */}
-                                            {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
-                                                <View style={styles.moonIcon}>
-                                                    <View style={styles.fullMoon} />
+                                                {/* 🌟 NUEVO: ANILLO EXTERIOR PARA EL DÍA ACTUAL (Estilo IG Story) */}
+                                                {dayItem.isToday && (
+                                                    <View style={[
+                                                        styles.todayOuterRing,
+                                                        { borderColor: mostrarColor ? basePhaseColor : 'rgba(255,255,255,0.4)' }
+                                                    ]} />
+                                                )}
+
+                                                {/* CÍRCULO DEL DÍA (Sencillo y sin sombras para evitar el bug cuadrado) */}
+                                                <View style={[
+                                                    styles.dayCircle,
+                                                    { backgroundColor: circleColor },
+                                                    dayItem.isToday && { transform: [{ scale: 1.1 }] }
+                                                ]}>
+                                                    <Text style={[styles.dayText, dayItem.isToday && { fontWeight: '800' }]}>
+                                                        {dayItem.day}
+                                                    </Text>
                                                 </View>
-                                            )}
 
-                                        </View>
-                                    ) : null}
-                                </View>
-                            );
-                        })}
+                                                {/* LUNA DE OVULACIÓN */}
+                                                {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
+                                                    <View style={styles.moonIcon}>
+                                                        <View style={styles.fullMoon} />
+                                                    </View>
+                                                )}
+
+                                            </View>
+                                        ) : null}
+                                    </View>
+                                );
+                            })}
+                        </View>
                     </View>
-                </View>
 
-                {/* 🌟 BOTÓN EDITAR ABAJO (Estilo Figma) */}
-                <TouchableOpacity style={styles.mainEditButton} onPress={handleEditPeriod}>
-                    <Text style={styles.mainEditButtonText}>Editar fechas de periodo</Text>
-                </TouchableOpacity>
+                    {/* BOTÓN EDITAR */}
+                    <View style={styles.bottomButtonContainer}>
+                        <TouchableOpacity style={styles.mainEditButton} onPress={handleEditPeriod}>
+                            <Text style={styles.mainEditButtonText}>Editar fechas de periodo</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </View>
 
             </ScrollView>
 
@@ -266,7 +284,6 @@ export default function CalendarScreen() {
 }
 
 const screenWidth = Dimensions.get('window').width;
-const cellWidth = (screenWidth - 60) / 7;
 
 const styles = StyleSheet.create({
     container: {
@@ -278,39 +295,45 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     logo: {
-        width: 140,
-        height: 40,
+        width: 175, // Logo más grande para equilibrar el espacio
+        height: 50,
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingBottom: 150
+        paddingBottom: 110, // Espacio para que el BottomNavigation no tape el botón
     },
     filterWrapper: {
-        marginVertical: 15,
+        marginTop: 5,
+        marginBottom: 20, // Menos margen abajo para que el calendario suba
     },
     filtersHorizontal: {
         paddingRight: 20,
+        paddingVertical: 5, // Evita que se corten bordes en el scroll
     },
     filterPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingHorizontal: 16, // Filtros más grandes
+        paddingVertical: 10,   // Filtros más grandes
+        borderRadius: 22,
         marginRight: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)'
     },
     dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 7,
+        height: 7,
+        borderRadius: 3.5,
         marginRight: 8,
     },
     filterText: {
         color: 'white',
-        fontWeight: '600',
-        fontSize: 12
+        fontWeight: '700',
+        fontSize: 13
+    },
+    calendarBlockContainer: {
+        width: '100%',
+        // Quitamos el flex: 1 para que se posicione naturalmente debajo de los filtros
     },
     navigationHeader: {
         flexDirection: 'row',
@@ -337,7 +360,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#1F1E29',
         borderRadius: 24,
         padding: 15,
-        marginBottom: 30,
+        marginBottom: 20,
     },
     weekdaysContainer: {
         flexDirection: 'row',
@@ -367,26 +390,27 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    todayOuterRing: {
+        position: 'absolute',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 2,
+        zIndex: 1, // Queda detrás del círculo principal
+    },
     dayCircle: {
         width: 32,
         height: 32,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden', // 🌟 ESTO PREVIENE EL BUG CUADRADO EN ANDROID
+        zIndex: 2,
     },
     dayText: {
         color: 'rgba(255,255,255,0.8)',
         fontSize: 14,
         fontWeight: '600'
-    },
-    todayHighlight: {
-        backgroundColor: 'rgba(106, 90, 205, 0.3)', // Color Bloom con transparencia
-        borderWidth: 1,
-        borderColor: '#6A5ACD',
-        shadowColor: '#6A5ACD',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 5,
     },
     cycleDayCorner: {
         position: 'absolute',
@@ -399,6 +423,7 @@ const styles = StyleSheet.create({
     moonIcon: {
         position: 'absolute',
         bottom: -2,
+        zIndex: 3, // Queda por encima de todo
     },
     fullMoon: {
         width: 6,
@@ -409,7 +434,10 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 3,
-        elevation: 5,
+        elevation: 5, // A la luna sí le podemos poner elevación porque no cambia de fondo
+    },
+    bottomButtonContainer: {
+        marginTop: 0,
     },
     mainEditButton: {
         backgroundColor: '#1F1E29',

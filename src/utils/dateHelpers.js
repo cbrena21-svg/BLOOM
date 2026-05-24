@@ -2,68 +2,51 @@ import dayjs from 'dayjs';
 
 /**
  * CALC_01 a CALC_04: Motor de Predicción Matemática Definitivo de Bloom
+ * Ahora acepta una duración de ciclo dinámica (dynamicCycleLength)
  */
-export const getPhaseForDay = (cycleDay, userProfile) => {
+export const getPhaseForDay = (cycleDay, userProfile, dynamicCycleLength = null) => {
     if (!userProfile) return null;
 
     const M = Number(userProfile.inp_period_length) || 5;
-    const totalLength = Number(userProfile.inp_cycle_length) || 28;
+    const totalLength = dynamicCycleLength !== null ? dynamicCycleLength : (Number(userProfile.inp_cycle_length) || 28);
     const age = Number(userProfile.inp_age) || 25;
     const profile = userProfile.user_profile || 'NATURAL';
     const esIrregular = userProfile.flag_regularidad === 'IRREGULAR';
 
-    // 🔴 CASO 1 (CALC_01): Perfil ARTIFICIAL
     if (profile === 'ARTIFICIAL') {
         if (cycleDay <= M) return 'menstrual';
-        return null; // El resto del mes se muestra neutro/gris
+        return null;
     }
 
-    // Inicializamos las variables métricas del ciclo
     let duracionMenstrual = M;
     let duracionFolicular = 0;
     let diaOvulacion = 0;
     let duracionLutea = 0;
 
-    // 🟢 CASO 2 (CALC_02): NATURAL y menos de 40 años
     if (profile === 'NATURAL' && age < 40) {
-        duracionLutea = 14; // Fijos
+        duracionLutea = 14;
         diaOvulacion = totalLength - 14;
-        duracionFolicular = diaOvulacion - duracionMenstrual; // ¡Aquí está tu sobrante corregido!
+        duracionFolicular = diaOvulacion - duracionMenstrual;
     }
-
-    // 🟡 CASO 3 (CALC_03): NATURAL y entre 40 y 44 años (Ajuste Edad Temprana)
     else if (profile === 'NATURAL' && age >= 40 && age <= 44) {
-        duracionFolicular = 10.4; // Fijos
+        duracionFolicular = 10.4;
         diaOvulacion = duracionMenstrual + duracionFolicular;
         duracionLutea = totalLength - duracionMenstrual - duracionFolicular;
     }
-
-    // 🟠 CASO 4 (CALC_04): TRANSICIÓN Avanzada o NATURAL mayor a 45 años
     else if (profile === 'TRANSITION' || age >= 45) {
-        duracionFolicular = 8.3; // Fijos
+        duracionFolicular = 8.3;
         diaOvulacion = duracionMenstrual + duracionFolicular;
         duracionLutea = totalLength - duracionMenstrual - duracionFolicular;
     }
 
-    // Redondeamos el día estimado de ovulación para posicionarlo en la cuadrícula
     const ovDayInt = Math.round(diaOvulacion);
-
-    // 📊 CALC_05: Margen de la Ventana Fémina (Criterio FIGO de Regularidad)
-    // Si es irregular, "difuminamos" expandiendo a 6 días; si es regular, se mantiene en 3 días.
     const rangoVentana = esIrregular ? 3 : 1;
     const ovStart = ovDayInt - rangoVentana;
     const ovEnd = ovDayInt + (esIrregular ? 2 : 1);
 
-    // --- CLASIFICACIÓN DE CASILLAS DEL CALENDARIO ---
-    if (cycleDay <= duracionMenstrual) {
-        return 'menstrual';
-    }
-    if (cycleDay < ovStart) {
-        return 'folicular';
-    }
-    if (cycleDay >= ovStart && cycleDay <= ovEnd) {
-        return 'ovulatoria';
-    }
+    if (cycleDay <= duracionMenstrual) return 'menstrual';
+    if (cycleDay < ovStart) return 'folicular';
+    if (cycleDay >= ovStart && cycleDay <= ovEnd) return 'ovulatoria';
     return 'lutea';
 };
 
@@ -77,7 +60,6 @@ export const getCycleDayForDate = (date, lastPeriodDate, cycleLength = 28) => {
         fechaLmpNormalizada = new Date(lastPeriodDate.seconds * 1000);
     }
 
-    // 🔥 SOLUCIÓN AL BUG: Forzamos a que ambas fechas se comparen al inicio del día (00:00)
     const last = dayjs(fechaLmpNormalizada).startOf('day');
     const target = dayjs(date).startOf('day');
 
@@ -87,19 +69,18 @@ export const getCycleDayForDate = (date, lastPeriodDate, cycleLength = 28) => {
     return ((((diffDays % cycleLength) + cycleLength) % cycleLength) + 1);
 };
 
+/**
+ * 🌟 REGLA DEL HISTORIAL VS PREDICCIÓN GLOBAL
+ */
 export const getMonthWithPhases = (date, userProfile) => {
     if (!userProfile) return [];
-    const lastPeriodDate = userProfile.inp_lmp_date;
-    const cycleLength = userProfile.inp_cycle_length || 28;
+
+    const baseLmp = userProfile.inp_lmp_date;
+    const defaultCycleLength = userProfile.inp_cycle_length || 28;
     const M = Number(userProfile.inp_period_length) || 5;
     const age = Number(userProfile.inp_age) || 25;
     const profile = userProfile.user_profile || 'NATURAL';
-
-    // Calcular el día exacto de la ovulación para el ícono
-    let diaOvulacionExacto = cycleLength - 14;
-    if (profile === 'NATURAL' && age >= 40 && age <= 44) diaOvulacionExacto = M + 10.4;
-    else if (profile === 'TRANSITION' || age >= 45) diaOvulacionExacto = M + 8.3;
-    const ovDayInt = Math.round(diaOvulacionExacto);
+    const history = userProfile.periods_history || [];
 
     const daysInMonth = dayjs(date).daysInMonth();
     let firstDay = dayjs(date).startOf('month').day();
@@ -112,21 +93,80 @@ export const getMonthWithPhases = (date, userProfile) => {
     }
 
     const inicioMes = dayjs(date).startOf('month');
+    const sortedHistory = [...history].sort((a, b) => dayjs(a.startDate).diff(dayjs(b.startDate)));
 
     for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-        const currentDate = inicioMes.date(dayNum);
-        const cycleDay = getCycleDayForDate(currentDate, lastPeriodDate, cycleLength);
-        const phase = getPhaseForDay(cycleDay, userProfile);
+        const currentDate = inicioMes.date(dayNum).startOf('day');
         const isToday = currentDate.isSame(dayjs(), 'day');
 
-        // 🥚 Validamos si este día del mes coincide con el pico de ovulación
-        const isOvulationDay = profile !== 'ARTIFICIAL' && cycleDay === ovDayInt;
+        let assignedPhase = null;
+        let calculatedCycleDay = 1;
+        let insideHistoryRange = false;
+
+        // 🌟 CORRECCIÓN: Se declara aquí arriba para que todo el bucle del día tenga acceso a ella
+        let currentCycleLength = defaultCycleLength;
+
+        // 🛑 REGLA 1: Verificar si el día actual es parte de un registro REAL
+        for (const record of sortedHistory) {
+            const startRange = dayjs(record.startDate).startOf('day');
+            const endRange = dayjs(record.endDate).startOf('day');
+
+            if ((currentDate.isAfter(startRange) || currentDate.isSame(startRange)) &&
+                (currentDate.isBefore(endRange) || currentDate.isSame(endRange))) {
+                insideHistoryRange = true;
+                assignedPhase = 'menstrual';
+                calculatedCycleDay = currentDate.diff(startRange, 'day') + 1;
+                break;
+            }
+        }
+
+        // 🔮 REGLA 2: Si no hay registro real para este día, calculamos predicciones
+        if (!insideHistoryRange) {
+            let anchorStartDate = null;
+
+            const pastRecords = sortedHistory.filter(r =>
+                dayjs(r.startDate).startOf('day').isBefore(currentDate) ||
+                dayjs(r.startDate).startOf('day').isSame(currentDate)
+            );
+
+            const futureRecords = sortedHistory.filter(r =>
+                dayjs(r.startDate).startOf('day').isAfter(currentDate)
+            );
+
+            if (pastRecords.length > 0) {
+                anchorStartDate = pastRecords[pastRecords.length - 1].startDate;
+
+                if (futureRecords.length > 0) {
+                    const nextStartDate = futureRecords[0].startDate;
+                    currentCycleLength = dayjs(nextStartDate).diff(dayjs(anchorStartDate), 'day');
+                } else {
+                    currentCycleLength = defaultCycleLength;
+                }
+            } else if (sortedHistory.length > 0) {
+                anchorStartDate = sortedHistory[0].startDate;
+                currentCycleLength = defaultCycleLength;
+            } else {
+                anchorStartDate = baseLmp;
+                currentCycleLength = defaultCycleLength;
+            }
+
+            calculatedCycleDay = getCycleDayForDate(currentDate, anchorStartDate, currentCycleLength);
+            assignedPhase = getPhaseForDay(calculatedCycleDay, userProfile, currentCycleLength);
+        }
+
+        // ⚡ Ahora esta lectura es 100% segura y no arrojará ReferenceError
+        let diaOvulacionExacto = currentCycleLength - 14;
+        if (profile === 'NATURAL' && age >= 40 && age <= 44) diaOvulacionExacto = M + 10.4;
+        else if (profile === 'TRANSITION' || age >= 45) diaOvulacionExacto = M + 8.3;
+        const ovDayInt = Math.round(diaOvulacionExacto);
+
+        const isOvulationDay = profile !== 'ARTIFICIAL' && calculatedCycleDay === ovDayInt && assignedPhase === 'ovulatoria';
 
         days.push({
             day: dayNum,
             date: currentDate,
-            cycleDay: cycleDay,
-            phase: phase,
+            cycleDay: calculatedCycleDay,
+            phase: assignedPhase,
             isToday: isToday,
             isOvulationDay: isOvulationDay,
         });

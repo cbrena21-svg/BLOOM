@@ -113,15 +113,33 @@ export default function CalendarScreen() {
                 const ultimoPeriodoRegistrado = nuevoHistorialActualizado[nuevoHistorialActualizado.length - 1];
                 const nuevoLmpGlobal = ultimoPeriodoRegistrado ? ultimoPeriodoRegistrado.startDate : fechaInicioString;
 
+                let nuevoPromedioCiclo = Number(userProfile?.inp_cycle_length) || 28;
+                if (nuevoHistorialActualizado.length > 1) {
+                    let totalDays = 0;
+                    let intervals = 0;
+                    const recentHistory = nuevoHistorialActualizado.slice(-7);
+                    for (let i = 1; i < recentHistory.length; i++) {
+                        const prevDate = dayjs(recentHistory[i - 1].startDate);
+                        const currDate = dayjs(recentHistory[i].startDate);
+                        totalDays += currDate.diff(prevDate, 'day');
+                        intervals++;
+                    }
+                    if (intervals > 0) {
+                        nuevoPromedioCiclo = Math.round(totalDays / intervals);
+                    }
+                }
+
                 await updateDoc(userDocRef, {
                     periods_history: nuevoHistorialActualizado,
-                    inp_lmp_date: nuevoLmpGlobal
+                    inp_lmp_date: nuevoLmpGlobal,
+                    avg_cycle_length: nuevoPromedioCiclo
                 });
 
                 setUserProfile({
                     ...userProfile,
                     periods_history: nuevoHistorialActualizado,
-                    inp_lmp_date: nuevoLmpGlobal
+                    inp_lmp_date: nuevoLmpGlobal,
+                    avg_cycle_length: nuevoPromedioCiclo
                 });
                 Alert.alert("¡Guardado!", "Tu ciclo ha sido actualizado.");
             } catch (error) {
@@ -224,8 +242,14 @@ export default function CalendarScreen() {
                                 const basePhaseColor = phases[phase] || 'rgba(255,255,255,0.2)';
                                 let circleColor = mostrarColor ? phases[phase] : 'transparent';
 
+                                // 🌟 Control de Predicciones Menstruales
+                                const isPredictedMenstrual = phase === 'menstrual' && dayItem.isPrediction && mostrarColor;
+
+                                // 🌟 Llave única absoluta para evitar bugs de reciclaje de renderizado nativo
+                                const uniqueKey = `${year}-${monthName}-${index}`;
+
                                 return (
-                                    <View key={index} style={styles.dayCell}>
+                                    <View key={uniqueKey} style={styles.dayCell}>
                                         {dayItem.day ? (
                                             <View style={styles.cellContent}>
 
@@ -240,12 +264,22 @@ export default function CalendarScreen() {
                                                     ]} />
                                                 )}
 
+                                                {/* Círculo visual del día protegido */}
                                                 <View style={[
                                                     styles.dayCircle,
-                                                    { backgroundColor: circleColor },
-                                                    dayItem.isToday && { transform: [{ scale: 1.1 }] }
+                                                    { backgroundColor: isPredictedMenstrual ? 'transparent' : circleColor },
+                                                    dayItem.isToday ? { transform: [{ scale: 1.1 }] } : null,
+                                                    isPredictedMenstrual ? {
+                                                        borderWidth: 1.5,
+                                                        borderColor: phases['menstrual'],
+                                                        opacity: 0.8
+                                                    } : null
                                                 ]}>
-                                                    <Text style={[styles.dayText, dayItem.isToday && { fontWeight: '800' }]}>
+                                                    <Text style={[
+                                                        styles.dayText,
+                                                        dayItem.isToday ? { fontWeight: '800' } : null,
+                                                        isPredictedMenstrual ? { color: phases['menstrual'] } : null
+                                                    ]}>
                                                         {dayItem.day}
                                                     </Text>
                                                 </View>

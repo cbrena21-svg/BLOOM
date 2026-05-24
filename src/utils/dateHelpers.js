@@ -102,11 +102,10 @@ export const getMonthWithPhases = (date, userProfile) => {
         let assignedPhase = null;
         let calculatedCycleDay = 1;
         let insideHistoryRange = false;
+        let isPrediction = true;
+        let currentCycleLength = userProfile.avg_cycle_length || defaultCycleLength;
 
-        // 🌟 CORRECCIÓN: Se declara aquí arriba para que todo el bucle del día tenga acceso a ella
-        let currentCycleLength = defaultCycleLength;
-
-        // 🛑 REGLA 1: Verificar si el día actual es parte de un registro REAL
+        // Verificar si el día actual es parte de un registro REAL
         for (const record of sortedHistory) {
             const startRange = dayjs(record.startDate).startOf('day');
             const endRange = dayjs(record.endDate).startOf('day');
@@ -116,6 +115,7 @@ export const getMonthWithPhases = (date, userProfile) => {
                 insideHistoryRange = true;
                 assignedPhase = 'menstrual';
                 calculatedCycleDay = currentDate.diff(startRange, 'day') + 1;
+                isPrediction = false;
                 break;
             }
         }
@@ -169,6 +169,7 @@ export const getMonthWithPhases = (date, userProfile) => {
             phase: assignedPhase,
             isToday: isToday,
             isOvulationDay: isOvulationDay,
+            isPrediction: isPrediction,
         });
     }
     return days;

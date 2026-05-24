@@ -146,7 +146,6 @@ export default function CalendarScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
 
-            {/* LOGO BLOOM SUPERIOR (Más grande) */}
             <View style={styles.logoContainer}>
                 <Image
                     source={require('../../../assets/icons/Group_35.png')}
@@ -155,7 +154,6 @@ export default function CalendarScreen() {
                 />
             </View>
 
-            {/* Selector de fecha nativo */}
             {showDatePicker && (
                 <DateTimePicker
                     value={currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate()}
@@ -171,7 +169,6 @@ export default function CalendarScreen() {
                 showsVerticalScrollIndicator={false}
             >
 
-                {/* FILTROS DESLIZABLES (Un poco más robustos y grandes) */}
                 <View style={styles.filterWrapper}>
                     <ScrollView
                         horizontal
@@ -194,15 +191,19 @@ export default function CalendarScreen() {
                     </ScrollView>
                 </View>
 
-                {/* BLOQUE DEL CALENDARIO (Ahora fluye naturalmente hacia arriba) */}
+                {/* CONTENEDOR CENTRAL */}
                 <View style={styles.calendarBlockContainer}>
 
-                    {/* HEADER DE NAVEGACIÓN */}
+                    {/* HEADER DE NAVEGACIÓN CON BANNER */}
                     <View style={styles.navigationHeader}>
                         <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
                             <Text style={styles.arrowText}>◀</Text>
                         </TouchableOpacity>
-                        <Text style={styles.monthTitle}>{monthName} {year}</Text>
+
+                        <View style={styles.monthBanner}>
+                            <Text style={styles.monthTitle}>{monthName} {year}</Text>
+                        </View>
+
                         <TouchableOpacity onPress={handleNextMonth} style={styles.navArrow}>
                             <Text style={styles.arrowText}>▶</Text>
                         </TouchableOpacity>
@@ -228,12 +229,10 @@ export default function CalendarScreen() {
                                         {dayItem.day ? (
                                             <View style={styles.cellContent}>
 
-                                                {/* DÍA DEL CICLO */}
                                                 <Text style={styles.cycleDayCorner}>
                                                     {dayItem.cycleDay}
                                                 </Text>
 
-                                                {/* 🌟 NUEVO: ANILLO EXTERIOR PARA EL DÍA ACTUAL (Estilo IG Story) */}
                                                 {dayItem.isToday && (
                                                     <View style={[
                                                         styles.todayOuterRing,
@@ -241,7 +240,6 @@ export default function CalendarScreen() {
                                                     ]} />
                                                 )}
 
-                                                {/* CÍRCULO DEL DÍA (Sencillo y sin sombras para evitar el bug cuadrado) */}
                                                 <View style={[
                                                     styles.dayCircle,
                                                     { backgroundColor: circleColor },
@@ -252,7 +250,6 @@ export default function CalendarScreen() {
                                                     </Text>
                                                 </View>
 
-                                                {/* LUNA DE OVULACIÓN */}
                                                 {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
                                                     <View style={styles.moonIcon}>
                                                         <View style={styles.fullMoon} />
@@ -292,48 +289,49 @@ const styles = StyleSheet.create({
     },
     logoContainer: {
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingTop: 10,
+        paddingBottom: 25,
     },
     logo: {
-        width: 175, // Logo más grande para equilibrar el espacio
-        height: 50,
+        width: 170,
+        height: 48,
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingBottom: 110, // Espacio para que el BottomNavigation no tape el botón
+        paddingBottom: 110,
+        flexGrow: 1,
     },
     filterWrapper: {
-        marginTop: 5,
-        marginBottom: 20, // Menos margen abajo para que el calendario suba
+        marginBottom: 20,
     },
     filtersHorizontal: {
         paddingRight: 20,
-        paddingVertical: 5, // Evita que se corten bordes en el scroll
     },
     filterPill: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16, // Filtros más grandes
-        paddingVertical: 10,   // Filtros más grandes
-        borderRadius: 22,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
         marginRight: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)'
     },
     dot: {
-        width: 7,
-        height: 7,
-        borderRadius: 3.5,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
         marginRight: 8,
     },
     filterText: {
         color: 'white',
-        fontWeight: '700',
-        fontSize: 13
+        fontWeight: '600',
+        fontSize: 12
     },
     calendarBlockContainer: {
-        width: '100%',
-        // Quitamos el flex: 1 para que se posicione naturalmente debajo de los filtros
+        flex: 1,
+        justifyContent: 'center',
+        paddingBottom: 10,
     },
     navigationHeader: {
         flexDirection: 'row',
@@ -350,11 +348,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     arrowText: { color: 'white', fontSize: 10 },
+    monthBanner: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 24,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
     monthTitle: {
         color: 'white',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
-        textTransform: 'capitalize'
+        textTransform: 'capitalize',
+        letterSpacing: 0.5
     },
     calendarCard: {
         backgroundColor: '#1F1E29',
@@ -396,7 +405,7 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         borderWidth: 2,
-        zIndex: 1, // Queda detrás del círculo principal
+        zIndex: 1,
     },
     dayCircle: {
         width: 32,
@@ -404,7 +413,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        overflow: 'hidden', // 🌟 ESTO PREVIENE EL BUG CUADRADO EN ANDROID
+        overflow: 'hidden',
         zIndex: 2,
     },
     dayText: {
@@ -423,7 +432,7 @@ const styles = StyleSheet.create({
     moonIcon: {
         position: 'absolute',
         bottom: -2,
-        zIndex: 3, // Queda por encima de todo
+        zIndex: 3,
     },
     fullMoon: {
         width: 6,
@@ -434,7 +443,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
         shadowRadius: 3,
-        elevation: 5, // A la luna sí le podemos poner elevación porque no cambia de fondo
+        elevation: 5,
     },
     bottomButtonContainer: {
         marginTop: 0,

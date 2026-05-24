@@ -76,7 +76,32 @@ export default function CalendarScreen() {
         if (userProfile) {
             setMonthName(getMonthName(currentMonth));
             setYear(getYear(currentMonth));
-            const daysWithPhases = getMonthWithPhases(currentMonth, userProfile);
+
+            let daysWithPhases = getMonthWithPhases(currentMonth, userProfile);
+
+            // 🌟 LOGICA DE UX: Limpiar predicciones y fases antes del primer periodo registrado
+            const historial = userProfile?.periods_history || [];
+            if (historial.length > 0) {
+                const primerPeriodo = historial[0]; // El primer elemento es el más antiguo por el .sort()
+                const fechaLimite = dayjs(primerPeriodo.startDate).startOf('day');
+
+                daysWithPhases = daysWithPhases.map(dayItem => {
+                    if (dayItem.day) {
+                        const fechaDia = currentMonth.date(dayItem.day).startOf('day');
+                        // Si el día evaluado es estrictamente anterior al primer registro, lo limpiamos
+                        if (fechaDia.isBefore(fechaLimite)) {
+                            return {
+                                ...dayItem,
+                                phase: null,
+                                isPrediction: false,
+                                cycleDay: null // Quitamos también el número de la esquina en el pasado remoto
+                            };
+                        }
+                    }
+                    return dayItem;
+                });
+            }
+
             setMonthDays(daysWithPhases);
         }
     }, [currentMonth, userProfile]);
@@ -209,10 +234,8 @@ export default function CalendarScreen() {
                     </ScrollView>
                 </View>
 
-                {/* CONTENEDOR CENTRAL */}
                 <View style={styles.calendarBlockContainer}>
 
-                    {/* HEADER DE NAVEGACIÓN CON BANNER */}
                     <View style={styles.navigationHeader}>
                         <TouchableOpacity onPress={handlePrevMonth} style={styles.navArrow}>
                             <Text style={styles.arrowText}>◀</Text>
@@ -227,7 +250,6 @@ export default function CalendarScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* CALENDARIO */}
                     <View style={styles.calendarCard}>
                         <View style={styles.weekdaysContainer}>
                             {weekdays.map((day, index) => (
@@ -242,10 +264,22 @@ export default function CalendarScreen() {
                                 const basePhaseColor = phases[phase] || 'rgba(255,255,255,0.2)';
                                 let circleColor = mostrarColor ? phases[phase] : 'transparent';
 
-                                // 🌟 Control de Predicciones Menstruales
-                                const isPredictedMenstrual = phase === 'menstrual' && dayItem.isPrediction && mostrarColor;
+                                // Identificamos si es una predicción menstrual sin importar el filtro de color activo
+                                const esMenstrualPrediccion = phase === 'menstrual' && dayItem.isPrediction;
 
-                                // 🌟 Llave única absoluta para evitar bugs de reciclaje de renderizado nativo
+                                // 🌟 SOLUCIÓN AL APAGADO DE FILTROS: Estilos estables y explícitos sin valores null
+                                const mostrarEfectoPrediccion = esMenstrualPrediccion && mostrarColor;
+
+                                const estiloCirculoDinamico = {
+                                    backgroundColor: mostrarEfectoPrediccion ? 'transparent' : circleColor,
+                                    borderWidth: mostrarEfectoPrediccion ? 1.5 : 0,
+                                    borderColor: mostrarEfectoPrediccion ? phases['menstrual'] : 'transparent',
+                                };
+
+                                const estiloTextoDinamico = {
+                                    color: mostrarEfectoPrediccion ? phases['menstrual'] : 'rgba(255,255,255,0.8)'
+                                };
+
                                 const uniqueKey = `${year}-${monthName}-${index}`;
 
                                 return (
@@ -253,9 +287,12 @@ export default function CalendarScreen() {
                                         {dayItem.day ? (
                                             <View style={styles.cellContent}>
 
-                                                <Text style={styles.cycleDayCorner}>
-                                                    {dayItem.cycleDay}
-                                                </Text>
+                                                {/* El número de día de ciclo se oculta automáticamente si es nulo en el pasado */}
+                                                {dayItem.cycleDay ? (
+                                                    <Text style={styles.cycleDayCorner}>
+                                                        {dayItem.cycleDay}
+                                                    </Text>
+                                                ) : null}
 
                                                 {dayItem.isToday && (
                                                     <View style={[
@@ -264,21 +301,15 @@ export default function CalendarScreen() {
                                                     ]} />
                                                 )}
 
-                                                {/* Círculo visual del día protegido */}
                                                 <View style={[
                                                     styles.dayCircle,
-                                                    { backgroundColor: isPredictedMenstrual ? 'transparent' : circleColor },
-                                                    dayItem.isToday ? { transform: [{ scale: 1.1 }] } : null,
-                                                    isPredictedMenstrual ? {
-                                                        borderWidth: 1.5,
-                                                        borderColor: phases['menstrual'],
-                                                        opacity: 0.8
-                                                    } : null
+                                                    estiloCirculoDinamico,
+                                                    dayItem.isToday ? { transform: [{ scale: 1.1 }] } : null
                                                 ]}>
                                                     <Text style={[
                                                         styles.dayText,
-                                                        dayItem.isToday ? { fontWeight: '800' } : null,
-                                                        isPredictedMenstrual ? { color: phases['menstrual'] } : null
+                                                        estiloTextoDinamico,
+                                                        dayItem.isToday ? { fontWeight: '800' } : null
                                                     ]}>
                                                         {dayItem.day}
                                                     </Text>
@@ -298,7 +329,6 @@ export default function CalendarScreen() {
                         </View>
                     </View>
 
-                    {/* BOTÓN EDITAR */}
                     <View style={styles.bottomButtonContainer}>
                         <TouchableOpacity style={styles.mainEditButton} onPress={handleEditPeriod}>
                             <Text style={styles.mainEditButtonText}>Editar fechas de periodo</Text>

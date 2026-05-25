@@ -60,8 +60,26 @@ const exerciseOptions = [
     { id: 'fuerza', label: 'Fuerza (Pesas)' },
 ];
 
-// Opciones rápidas de tiempo en minutos
 const timeOptions = [15, 30, 45, 60, 90];
+
+// --- CONSTANTES SECCIÓN 4 (SEXUALIDAD Y FERTILIDAD) ---
+const metodosHormonales = [
+    'Pastillas combinadas', 'Mini-píldora (Solo Progesterona)',
+    'DIU Hormonal (Mirena / Kyleena)', 'Implante subdérmico',
+    'Parche', 'Anillo', 'Inyección'
+];
+
+const metodosBarreraNatural = [
+    'Condón', 'DIU de Cobre (No hormonal)', 'Coito interrumpido',
+    'Ritmo', 'Moco Cervical', 'Temperatura Basal'
+];
+
+const cervicalFluidOptions = [
+    { id: 'seco', label: 'Seco' },
+    { id: 'cremoso', label: 'Cremoso' },
+    { id: 'acuoso', label: 'Acuoso' },
+    { id: 'clara_de_huevo', label: 'Clara de huevo' },
+];
 
 export default function TrackingScreen() {
     const [isPeriodActive, setIsPeriodActive] = useState(false);
@@ -84,7 +102,18 @@ export default function TrackingScreen() {
     const [selectedStress, setSelectedStress] = useState(null);
     const [selectedSleep, setSelectedSleep] = useState(null);
     const [selectedExercise, setSelectedExercise] = useState(null);
-    const [exerciseMinutes, setExerciseMinutes] = useState(null); // Ahora es numérico
+    const [exerciseMinutes, setExerciseMinutes] = useState(null);
+
+    // --- ESTADOS SECCIÓN 4 (SEXUALIDAD Y FERTILIDAD) ---
+    const [isSexOpen, setIsSexOpen] = useState(false);
+    const [userContraceptive, setUserContraceptive] = useState('Ninguno');
+    const [isHormonal, setIsHormonal] = useState(false);
+
+    const [selectedFluid, setSelectedFluid] = useState(null);
+    const [sexPresent, setSexPresent] = useState(null);
+    const [protectionType, setProtectionType] = useState(null);
+    const [selectedProtection, setSelectedProtection] = useState(null);
+    const [contraceptiveVerified, setContraceptiveVerified] = useState(null);
 
     const [notas, setNotas] = useState('');
     const [cargando, setCargando] = useState(false);
@@ -97,6 +126,12 @@ export default function TrackingScreen() {
 
                 if (resultado.success && resultado.data) {
                     const userData = resultado.data;
+
+                    // Extraer y configurar tipo de perfil anticonceptivo
+                    const metodoGuardado = userData.inp_contraceptive || 'Ninguno';
+                    setUserContraceptive(metodoGuardado);
+                    setIsHormonal(metodosHormonales.includes(metodoGuardado));
+
                     const hoy = new Date();
                     hoy.setHours(0, 0, 0, 0);
 
@@ -203,9 +238,19 @@ export default function TrackingScreen() {
                 flag_stress_level: selectedStress || 'none',
                 inp_sleep_quality: selectedSleep || 'none'
             },
-            actividad_fisica: {
+            actividad_physica: {
                 tipo_ejercicio: selectedExercise || 'none',
                 minutos: selectedExercise && selectedExercise !== 'ninguno' ? (exerciseMinutes || 0) : 0
+            },
+            sexualidad_fertilidad: {
+                flujo_cervical: selectedFluid || 'none',
+                actividad_sexual: sexPresent === 'si'
+                    ? (isHormonal ? 'si' : (protectionType || 'si'))
+                    : (sexPresent === 'no' ? 'no' : 'none'),
+                metodo_proteccion: (!isHormonal && protectionType === 'con_proteccion')
+                    ? (selectedProtection || 'none')
+                    : 'none',
+                anticonceptivo_verificado: isHormonal ? (contraceptiveVerified === 'si') : false
             },
             notas: notas.trim(),
             ultima_actualizacion: new Date().toISOString()
@@ -343,7 +388,6 @@ export default function TrackingScreen() {
 
                     {isMindOpen && (
                         <View style={styles.collapsibleContent}>
-
                             <Text style={styles.labelSub}>Nivel de Energía (Batería):</Text>
                             <View style={styles.row}>
                                 {energyOptions.map(option => (
@@ -392,7 +436,6 @@ export default function TrackingScreen() {
                                 ))}
                             </View>
 
-                            {/* NUEVOS BOTONES RÁPIDOS DE TIEMPO */}
                             {selectedExercise && selectedExercise !== 'ninguno' && (
                                 <View style={styles.timeInputContainer}>
                                     <Text style={styles.labelSubMargin}>Duración aproximada:</Text>
@@ -409,6 +452,80 @@ export default function TrackingScreen() {
                                                 <Text style={styles.timePillText}>{time} min</Text>
                                             </TouchableOpacity>
                                         ))}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </View>
+
+                {/* --- SECCIÓN 4: SEXUALIDAD Y FERTILIDAD --- */}
+                <View style={[styles.moduleContainer, { marginTop: 15 }]}>
+                    <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsSexOpen(!isSexOpen)} activeOpacity={0.7}>
+                        <Text style={styles.sectionTitle}>Sexualidad y Fertilidad</Text>
+                        <Text style={styles.arrowIcon}>{isSexOpen ? '▲' : '▼'}</Text>
+                    </TouchableOpacity>
+
+                    {isSexOpen && (
+                        <View style={styles.collapsibleContent}>
+                            <Text style={styles.labelSub}>Flujo Cervical:</Text>
+                            <View style={styles.row}>
+                                {cervicalFluidOptions.map(option => (
+                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedFluid === option.id && styles.fluidPillSelected]} onPress={() => setSelectedFluid(option.id)}>
+                                        <Text style={styles.productPillText}>{option.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.labelSubMargin}>Relaciones sexuales:</Text>
+                            <View style={styles.row}>
+                                <TouchableOpacity style={[styles.productPill, sexPresent === 'si' && (isHormonal ? styles.sexNeutralSelected : styles.sexPillGenericSelected)]} onPress={() => { setSexPresent('si'); setProtectionType(null); setSelectedProtection(null); }}>
+                                    <Text style={styles.productPillText}>Sí</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.productPill, sexPresent === 'no' && styles.digestionPillSelected]} onPress={() => { setSexPresent('no'); setProtectionType(null); setSelectedProtection(null); }}>
+                                    <Text style={styles.productPillText}>No</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* FLUJO PERFIL NATURAL */}
+                            {!isHormonal && sexPresent === 'si' && (
+                                <View style={{ marginTop: 10 }}>
+                                    <Text style={styles.labelSubMargin}>Protección utilizada:</Text>
+                                    <View style={styles.row}>
+                                        <TouchableOpacity style={[styles.productPill, protectionType === 'con_proteccion' && styles.sexSafeSelected]} onPress={() => { setProtectionType('con_proteccion'); setSelectedProtection(null); }}>
+                                            <Text style={styles.productPillText}>Con protección</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={[styles.productPill, protectionType === 'sin_proteccion' && styles.sexUnsafeSelected]} onPress={() => { setProtectionType('sin_proteccion'); setSelectedProtection(null); }}>
+                                            <Text style={styles.productPillText}>Sin protección</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {protectionType === 'con_proteccion' && (
+                                        <View style={{ marginTop: 10 }}>
+                                            <Text style={styles.labelSubMargin}>Método de barrera o natural:</Text>
+                                            <View style={styles.row}>
+                                                {metodosBarreraNatural.map(metodo => (
+                                                    <TouchableOpacity key={metodo} style={[styles.productPill, selectedProtection === metodo && styles.protectionSelected]} onPress={() => setSelectedProtection(metodo)}>
+                                                        <Text style={styles.productPillText}>{metodo}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+
+                            {/* FLUJO PERFIL ARTIFICIAL / HORMONAL */}
+                            {isHormonal && (
+                                <View style={{ marginTop: 10 }}>
+                                    <Text style={styles.labelSubMargin}>¿Verificaste tu método hoy? ({userContraceptive})</Text>
+                                    <View style={styles.row}>
+                                        <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'si' && styles.verificationSuccessSelected]} onPress={() => setContraceptiveVerified('si')}>
+                                            <Text style={styles.productPillText}>Sí</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'no' && styles.sexUnsafeSelected]} onPress={() => setContraceptiveVerified('no')}>
+                                            <Text style={styles.productPillText}>No</Text>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                             )}
@@ -461,15 +578,15 @@ const styles = StyleSheet.create({
     symptomPillSelected: { backgroundColor: '#4A1525' },
     digestionPillSelected: { backgroundColor: '#2E2E42' },
     energyPillSelected: { backgroundColor: '#6A5ACD' },
-    moodPillSelected: { backgroundColor: '#F4B41A' }, // Amarillo cálido para ánimo
-    stressPillSelected: { backgroundColor: '#D9534F' }, // Rojo suave para estrés
-    sleepPillSelected: { backgroundColor: '#5BC0DE' }, // Azul claro para sueño
-    exercisePillSelected: { backgroundColor: '#5CB85C' }, // Verde para ejercicio
+    moodPillSelected: { backgroundColor: '#F4B41A' },
+    stressPillSelected: { backgroundColor: '#D9534F' },
+    sleepPillSelected: { backgroundColor: '#5BC0DE' },
+    exercisePillSelected: { backgroundColor: '#5CB85C' },
 
-    // --- ESTILOS BOTONES DE TIEMPO (NUEVO) ---
+    // --- ESTILOS BOTONES DE TIEMPO ---
     timeInputContainer: { marginTop: 5 },
     timePill: { backgroundColor: '#0D0D1E', borderWidth: 1, borderColor: '#2E2E42', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 15, marginBottom: 4 },
-    timePillSelected: { backgroundColor: '#5CB85C', borderColor: '#5CB85C' }, // Mismo verde del ejercicio
+    timePillSelected: { backgroundColor: '#5CB85C', borderColor: '#5CB85C' },
     timePillText: { color: 'white', fontSize: 13, fontWeight: '600' },
 
     counterSection: { marginTop: 15, backgroundColor: '#1A1A2E', padding: 12, borderRadius: 12 },
@@ -491,4 +608,13 @@ const styles = StyleSheet.create({
     clotButtonText: { color: 'white', fontSize: 15, fontWeight: '700' },
     saveButton: { backgroundColor: 'white', borderRadius: 25, paddingVertical: 15, alignItems: 'center', marginTop: 30 },
     saveButtonText: { color: Colors.fondo, fontSize: 16, fontWeight: '800' },
+
+    // --- ESTILOS SECCIÓN 4 (SEXUALIDAD) ---
+    fluidPillSelected: { backgroundColor: '#E91E63' },
+    sexPillGenericSelected: { backgroundColor: '#2E2E42' },
+    sexNeutralSelected: { backgroundColor: '#8E44AD' },
+    sexSafeSelected: { backgroundColor: '#3498DB' },
+    sexUnsafeSelected: { backgroundColor: '#E74C3C' },
+    protectionSelected: { backgroundColor: '#4A1525' },
+    verificationSuccessSelected: { backgroundColor: '#5CB85C' },
 });

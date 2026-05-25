@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Image, Platform, Modal} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { db, auth } from '../../services/firebaseConfig';
@@ -336,7 +337,7 @@ export default function CalendarScreen() {
                                                     <Text style={[
                                                         styles.dayText,
                                                         estiloTextoDinamico,
-                                                        dayItem.isToday ? { fontWeight: '800' } : null
+                                                        dayItem.isToday ? { fontWeight: '800', fontFamily: FONT_BOLD } : null
                                                     ]}>
                                                         {dayItem.day}
                                                     </Text>
@@ -417,7 +418,8 @@ const styles = StyleSheet.create({
     filterText: {
         color: 'white',
         fontWeight: '600',
-        fontSize: 12
+        fontSize: 12,
+        fontFamily: FONT_REGULAR,
     },
     calendarBlockContainer: {
         flex: 1,
@@ -438,7 +440,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    arrowText: { color: 'white', fontSize: 10 },
+    arrowText: { color: 'white', fontSize: 10, fontFamily: FONT_BOLD },
     monthBanner: {
         backgroundColor: 'rgba(255,255,255,0.05)',
         paddingHorizontal: 24,
@@ -453,6 +455,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
         textTransform: 'capitalize',
         letterSpacing: 0.5
     },
@@ -483,6 +486,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 18,
         fontWeight: '700',
+        fontFamily: FONT_BOLD,
         marginBottom: 12,
         textAlign: 'center',
     },
@@ -506,10 +510,12 @@ const styles = StyleSheet.create({
     modalCancelText: {
         color: 'white',
         fontWeight: '700',
+        fontFamily: FONT_REGULAR,
     },
     modalSaveText: {
         color: '#0D0D1E',
         fontWeight: '800',
+        fontFamily: FONT_BOLD,
     },
     weekdaysContainer: {
         flexDirection: 'row',
@@ -520,7 +526,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: 'rgba(255,255,255,0.4)',
         fontSize: 12,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontFamily: FONT_BOLD
     },
     calendarGrid: {
         flexDirection: 'row',
@@ -559,7 +566,8 @@ const styles = StyleSheet.create({
     dayText: {
         color: 'rgba(255,255,255,0.8)',
         fontSize: 14,
-        fontWeight: '600'
+        fontWeight: '600',
+        fontFamily: FONT_REGULAR
     },
     cycleDayCorner: {
         position: 'absolute',
@@ -567,13 +575,45 @@ const styles = StyleSheet.create({
         right: 2,
         fontSize: 8,
         color: 'rgba(255,255,255,0.3)',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontFamily: FONT_BOLD
     },
     moonIcon: {
         position: 'absolute',
         bottom: -2,
         zIndex: 3,
     },
+<<<<<<< Updated upstream
+=======
+    sexHeartIcon: {
+        position: 'absolute',
+        top: -1,
+        right: -1,
+        zIndex: 4,
+        width: 12,
+        height: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sexHeartProtected: {
+        transform: [{ scale: 0.95 }],
+    },
+    sexHeartUnprotected: {
+        transform: [{ scale: 1 }],
+    },
+    sexHeartHormonal: {
+        transform: [{ scale: 0.95 }],
+    },
+    sexHeartText: {
+        color: '#FF5C8A',
+        fontSize: 11,
+        fontWeight: '900',
+        fontFamily: FONT_BOLD,
+        textShadowColor: 'rgba(0,0,0,0.4)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 1,
+    },
+>>>>>>> Stashed changes
     fullMoon: {
         width: 6,
         height: 6,
@@ -599,6 +639,7 @@ const styles = StyleSheet.create({
     mainEditButtonText: {
         color: 'white',
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
         fontSize: 14,
     }
 });

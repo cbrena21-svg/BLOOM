@@ -7,6 +7,7 @@ import EnergyBar from '../../components/Cycle/EnergyBar';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { useCyclePhase } from '../../hooks/useCyclePhase';
 import { Colors } from '../../styles/colors';
+import { FONT_BOLD, FONT_REGULAR } from '../../styles/typography';
 import { logout } from '../../services/authService';
 import { getLastPeriodDate, getCycleLength } from '../../services/storageService';
 import { getCurrentCycleDay } from '../../utils/cycleCalculator';
@@ -140,6 +141,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 34,
         fontWeight: '800',
+        fontFamily: FONT_BOLD,
         marginTop: 20,
     },
     formContainer: {
@@ -156,9 +158,11 @@ const styles = StyleSheet.create({
         marginTop: 15,
         opacity: 0.85,
         lineHeight: 22,
+        fontFamily: FONT_REGULAR,
     },
     buttonText: {
         color: '#fff',
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
     }
 });

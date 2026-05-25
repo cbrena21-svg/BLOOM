@@ -1,4 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { db, auth } from './firebaseConfig';
 
 /**
@@ -25,15 +25,49 @@ export const guardarTrackingDiario = async (datosTracking) => {
         const logRef = doc(db, 'users', usuarioActivo.uid, 'daily_logs', fechaID);
 
         // Guardamos los datos fusionando por si ya registró algo antes en el mismo día
+        // Nota: Agregué { merge: true } para que realmente fusione los datos y no sobrescriba lo anterior
         await setDoc(logRef, {
             ...datosTracking,
             ultima_actualizacion: hoy.toISOString(),
-        });
+        }, { merge: true });
 
         console.log(`[Firebase] Tracking diario guardado con éxito para: ${fechaID}`);
         return { success: true };
     } catch (error) {
         console.error("Error crítico en guardarTrackingDiario:", error);
         return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Trae los logs de todo un mes para pintarlos en el calendario
+ * @param {string} mesAnoStr - Formato 'YYYY-MM'
+ */
+export const obtenerTrackingMensual = async (mesAnoStr) => {
+    try {
+        const usuarioActivo = auth.currentUser;
+        if (!usuarioActivo) return { success: false, data: {} };
+
+        const logsRef = collection(db, 'users', usuarioActivo.uid, 'daily_logs');
+
+        // Buscamos los documentos de ese mes específico comparando el ID del documento (la fecha)
+        const q = query(
+            logsRef,
+            where(documentId(), '>=', `${mesAnoStr}-01`),
+            where(documentId(), '<=', `${mesAnoStr}-31`)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const datosMes = {};
+
+        querySnapshot.forEach((documento) => {
+            // Guardamos usando la fecha como clave: datosMes['2026-05-25']
+            datosMes[documento.id] = documento.data();
+        });
+
+        return { success: true, data: datosMes };
+    } catch (error) {
+        console.error("Error obteniendo el tracking mensual:", error);
+        return { success: false, error: error.message, data: {} };
     }
 };

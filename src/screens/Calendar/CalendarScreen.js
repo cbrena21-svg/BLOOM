@@ -17,12 +17,14 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { db, auth } from '../../services/firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
+import { obtenerTrackingMensual } from '../../services/trackingService'; // 🌟 Importamos la función
 import {
     getMonthWithPhases,
     getMonthName,
     getYear
 } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
+import { FontAwesome } from '@expo/vector-icons';
 
 const phases = {
     menstrual: Colors.menstrual,
@@ -56,6 +58,9 @@ export default function CalendarScreen() {
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
+    // 🌟 ESTADO NUEVO: Aquí guardaremos los registros del mes
+    const [dailyTracking, setDailyTracking] = useState({});
+
     useEffect(() => {
         const loadUserProfile = async () => {
             try {
@@ -79,22 +84,20 @@ export default function CalendarScreen() {
 
             let daysWithPhases = getMonthWithPhases(currentMonth, userProfile);
 
-            // 🌟 LOGICA DE UX: Limpiar predicciones y fases antes del primer periodo registrado
             const historial = userProfile?.periods_history || [];
             if (historial.length > 0) {
-                const primerPeriodo = historial[0]; // El primer elemento es el más antiguo por el .sort()
+                const primerPeriodo = historial[0];
                 const fechaLimite = dayjs(primerPeriodo.startDate).startOf('day');
 
                 daysWithPhases = daysWithPhases.map(dayItem => {
                     if (dayItem.day) {
                         const fechaDia = currentMonth.date(dayItem.day).startOf('day');
-                        // Si el día evaluado es estrictamente anterior al primer registro, lo limpiamos
                         if (fechaDia.isBefore(fechaLimite)) {
                             return {
                                 ...dayItem,
                                 phase: null,
                                 isPrediction: false,
-                                cycleDay: null // Quitamos también el número de la esquina en el pasado remoto
+                                cycleDay: null
                             };
                         }
                     }
@@ -103,6 +106,16 @@ export default function CalendarScreen() {
             }
 
             setMonthDays(daysWithPhases);
+
+            // 🌟 NUEVO: Descargamos los registros diarios (trackings) al cambiar el mes
+            const fetchTracking = async () => {
+                const mesAnoStr = currentMonth.format('YYYY-MM');
+                const res = await obtenerTrackingMensual(mesAnoStr);
+                if (res.success) {
+                    setDailyTracking(res.data);
+                }
+            };
+            fetchTracking();
         }
     }, [currentMonth, userProfile]);
 
@@ -264,10 +277,7 @@ export default function CalendarScreen() {
                                 const basePhaseColor = phases[phase] || 'rgba(255,255,255,0.2)';
                                 let circleColor = mostrarColor ? phases[phase] : 'transparent';
 
-                                // Identificamos si es una predicción menstrual sin importar el filtro de color activo
                                 const esMenstrualPrediccion = phase === 'menstrual' && dayItem.isPrediction;
-
-                                // 🌟 SOLUCIÓN AL APAGADO DE FILTROS: Estilos estables y explícitos sin valores null
                                 const mostrarEfectoPrediccion = esMenstrualPrediccion && mostrarColor;
 
                                 const estiloCirculoDinamico = {
@@ -282,12 +292,31 @@ export default function CalendarScreen() {
 
                                 const uniqueKey = `${year}-${monthName}-${index}`;
 
+                                // 🌟 LÓGICA DEL CORAZÓN BASADA EN LA BASE DE DATOS
+                                let showHeart = false;
+                                let showLock = false;
+
+                                if (dayItem.day) {
+                                    // Buscamos la fecha exacta del día en el estado descargado de Firebase
+                                    const dateStr = currentMonth.date(dayItem.day).format('YYYY-MM-DD');
+                                    const tracking = dailyTracking[dateStr];
+                                    const tipoSexoLog = tracking?.sexualidad_fertilidad?.actividad_sexual;
+
+                                    if (tipoSexoLog === 'si' || tipoSexoLog === 'con_proteccion' || tipoSexoLog === 'sin_proteccion') {
+                                        showHeart = true;
+                                        if (isArtificial) {
+                                            showLock = true;
+                                        } else if (tipoSexoLog === 'con_proteccion') {
+                                            showLock = true;
+                                        }
+                                    }
+                                }
+
                                 return (
                                     <View key={uniqueKey} style={styles.dayCell}>
                                         {dayItem.day ? (
                                             <View style={styles.cellContent}>
 
-                                                {/* El número de día de ciclo se oculta automáticamente si es nulo en el pasado */}
                                                 {dayItem.cycleDay ? (
                                                     <Text style={styles.cycleDayCorner}>
                                                         {dayItem.cycleDay}
@@ -318,6 +347,16 @@ export default function CalendarScreen() {
                                                 {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
                                                     <View style={styles.moonIcon}>
                                                         <View style={styles.fullMoon} />
+                                                    </View>
+                                                )}
+
+                                                {/* 🌟 RENDERIZAMOS EL CORAZÓN CON SU RESPECTIVO CANDADO */}
+                                                {showHeart && (
+                                                    <View style={styles.sexHeartContainer}>
+                                                        <FontAwesome name="heart" size={12} color="#FF69B4" />
+                                                        {showLock && (
+                                                            <FontAwesome name="lock" size={7} color="#FFFFFF" style={styles.sexLockIcon} />
+                                                        )}
                                                     </View>
                                                 )}
 
@@ -508,6 +547,19 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         shadowRadius: 3,
         elevation: 5,
+    },
+    /* 🌟 ESTILOS DE LOS CORAZONES */
+    sexHeartContainer: {
+        position: 'absolute',
+        bottom: -6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 4,
+    },
+    sexLockIcon: {
+        position: 'absolute',
+        zIndex: 5,
+        top: 2 // Para que el candado quede bien centrado dentro del corazón
     },
     bottomButtonContainer: {
         marginTop: 0,

@@ -28,7 +28,7 @@ export const guardarTrackingDiario = async (datosTracking) => {
         await setDoc(logRef, {
             ...datosTracking,
             ultima_actualizacion: hoy.toISOString(),
-        }, { merge: true });
+        });
 
         console.log(`[Firebase] Tracking diario guardado con éxito para: ${fechaID}`);
         return { success: true };

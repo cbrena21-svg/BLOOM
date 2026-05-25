@@ -583,8 +583,6 @@ const styles = StyleSheet.create({
         bottom: -2,
         zIndex: 3,
     },
-<<<<<<< Updated upstream
-=======
     sexHeartIcon: {
         position: 'absolute',
         top: -1,
@@ -613,7 +611,6 @@ const styles = StyleSheet.create({
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 1,
     },
->>>>>>> Stashed changes
     fullMoon: {
         width: 6,
         height: 6,

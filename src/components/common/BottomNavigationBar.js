@@ -18,7 +18,7 @@ export default function BottomNavigation() {
 
         <TouchableOpacity
             style={styles.plusButton}
-            onPress={() => navigation.navigate('CycleConfig')}
+            onPress={() => navigation.navigate('Tracking')}
         >
             <Ionicons name='add' size={28} color='#1A1A2F' />
         </TouchableOpacity>

@@ -8,16 +8,17 @@ import {
     Dimensions,
     ActivityIndicator,
     Alert,
-    Image
+    Image,
+    Modal // 🌟 Agregado el Modal de react-native
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar } from 'react-native-calendars'; // 🌟 Cambiado por el calendario cross-platform
 import { db, auth } from '../../services/firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
-import { obtenerTrackingMensual } from '../../services/trackingService'; // 🌟 Importamos la función
+import { obtenerTrackingMensual } from '../../services/trackingService';
 import {
     getMonthWithPhases,
     getMonthName,
@@ -58,7 +59,8 @@ export default function CalendarScreen() {
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
-    // 🌟 ESTADO NUEVO: Aquí guardaremos los registros del mes
+    // 🌟 Estados clave integrados
+    const [selectedPeriodDate, setSelectedPeriodDate] = useState(dayjs().toDate());
     const [dailyTracking, setDailyTracking] = useState({});
 
     useEffect(() => {
@@ -107,7 +109,6 @@ export default function CalendarScreen() {
 
             setMonthDays(daysWithPhases);
 
-            // 🌟 NUEVO: Descargamos los registros diarios (trackings) al cambiar el mes
             const fetchTracking = async () => {
                 const mesAnoStr = currentMonth.format('YYYY-MM');
                 const res = await obtenerTrackingMensual(mesAnoStr);
@@ -121,70 +122,76 @@ export default function CalendarScreen() {
 
     const handlePrevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
     const handleNextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
-    const handleEditPeriod = () => setShowDatePicker(true);
 
-    const onDateChange = async (event, selectedDate) => {
+    // 🌟 Manejo de apertura del nuevo Modal estilo tu amiga
+    const handleEditPeriod = () => {
+        setSelectedPeriodDate(currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate());
+        setShowDatePicker(true);
+    };
+
+    // 🌟 Nueva función para procesar y guardar la fecha seleccionada en el Modal
+    const handleSavePeriodDate = async () => {
         setShowDatePicker(false);
-        if (selectedDate) {
-            setLoading(true);
-            const fechaInicioString = dayjs(selectedDate).format('YYYY-MM-DD');
-            const M = Number(userProfile?.inp_period_length) || 5;
-            const fechaFinString = dayjs(selectedDate).add(M - 1, 'day').format('YYYY-MM-DD');
+        if (!selectedPeriodDate) return;
 
-            try {
-                const uid = auth.currentUser?.uid;
-                const userDocRef = doc(db, 'users', uid);
-                const historialActual = userProfile?.periods_history || [];
-                const mesSeleccionadoStr = dayjs(selectedDate).format('YYYY-MM');
-                const historialFiltrado = historialActual.filter(item => !item.startDate.startsWith(mesSeleccionadoStr));
+        setLoading(true);
+        const fechaInicioString = dayjs(selectedPeriodDate).format('YYYY-MM-DD');
+        const M = Number(userProfile?.inp_period_length) || 5;
+        const fechaFinString = dayjs(selectedPeriodDate).add(M - 1, 'day').format('YYYY-MM-DD');
 
-                const nuevoRegistroPeriodo = {
-                    startDate: fechaInicioString,
-                    endDate: fechaFinString,
-                    duration: M
-                };
+        try {
+            const uid = auth.currentUser?.uid;
+            const userDocRef = doc(db, 'users', uid);
+            const historialActual = userProfile?.periods_history || [];
+            const mesSeleccionadoStr = dayjs(selectedPeriodDate).format('YYYY-MM');
+            const historialFiltrado = historialActual.filter(item => !item.startDate.startsWith(mesSeleccionadoStr));
 
-                const nuevoHistorialActualizado = [...historialFiltrado, nuevoRegistroPeriodo].sort(
-                    (a, b) => dayjs(a.startDate).diff(dayjs(b.startDate))
-                );
+            const nuevoRegistroPeriodo = {
+                startDate: fechaInicioString,
+                endDate: fechaFinString,
+                duration: M
+            };
 
-                const ultimoPeriodoRegistrado = nuevoHistorialActualizado[nuevoHistorialActualizado.length - 1];
-                const nuevoLmpGlobal = ultimoPeriodoRegistrado ? ultimoPeriodoRegistrado.startDate : fechaInicioString;
+            const nuevoHistorialActualizado = [...historialFiltrado, nuevoRegistroPeriodo].sort(
+                (a, b) => dayjs(a.startDate).diff(dayjs(b.startDate))
+            );
 
-                let nuevoPromedioCiclo = Number(userProfile?.inp_cycle_length) || 28;
-                if (nuevoHistorialActualizado.length > 1) {
-                    let totalDays = 0;
-                    let intervals = 0;
-                    const recentHistory = nuevoHistorialActualizado.slice(-7);
-                    for (let i = 1; i < recentHistory.length; i++) {
-                        const prevDate = dayjs(recentHistory[i - 1].startDate);
-                        const currDate = dayjs(recentHistory[i].startDate);
-                        totalDays += currDate.diff(prevDate, 'day');
-                        intervals++;
-                    }
-                    if (intervals > 0) {
-                        nuevoPromedioCiclo = Math.round(totalDays / intervals);
-                    }
+            const ultimoPeriodoRegistrado = nuevoHistorialActualizado[nuevoHistorialActualizado.length - 1];
+            const nuevoLmpGlobal = ultimoPeriodoRegistrado ? ultimoPeriodoRegistrado.startDate : fechaInicioString;
+
+            let nuevoPromedioCiclo = Number(userProfile?.inp_cycle_length) || 28;
+            if (nuevoHistorialActualizado.length > 1) {
+                let totalDays = 0;
+                let intervals = 0;
+                const recentHistory = nuevoHistorialActualizado.slice(-7);
+                for (let i = 1; i < recentHistory.length; i++) {
+                    const prevDate = dayjs(recentHistory[i - 1].startDate);
+                    const currDate = dayjs(recentHistory[i].startDate);
+                    totalDays += currDate.diff(prevDate, 'day');
+                    intervals++;
                 }
-
-                await updateDoc(userDocRef, {
-                    periods_history: nuevoHistorialActualizado,
-                    inp_lmp_date: nuevoLmpGlobal,
-                    avg_cycle_length: nuevoPromedioCiclo
-                });
-
-                setUserProfile({
-                    ...userProfile,
-                    periods_history: nuevoHistorialActualizado,
-                    inp_lmp_date: nuevoLmpGlobal,
-                    avg_cycle_length: nuevoPromedioCiclo
-                });
-                Alert.alert("¡Guardado!", "Tu ciclo ha sido actualizado.");
-            } catch (error) {
-                Alert.alert("Error", "No se pudo conectar con el servidor.");
-            } finally {
-                setLoading(false);
+                if (intervals > 0) {
+                    nuevoPromedioCiclo = Math.round(totalDays / intervals);
+                }
             }
+
+            await updateDoc(userDocRef, {
+                periods_history: nuevoHistorialActualizado,
+                inp_lmp_date: nuevoLmpGlobal,
+                avg_cycle_length: nuevoPromedioCiclo
+            });
+
+            setUserProfile({
+                ...userProfile,
+                periods_history: nuevoHistorialActualizado,
+                inp_lmp_date: nuevoLmpGlobal,
+                avg_cycle_length: nuevoPromedioCiclo
+            });
+            Alert.alert("¡Guardado!", "Tu ciclo ha sido actualizado.");
+        } catch (error) {
+            Alert.alert("Error", "No se pudo conectar con el servidor.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -210,15 +217,59 @@ export default function CalendarScreen() {
                 />
             </View>
 
-            {showDatePicker && (
-                <DateTimePicker
-                    value={currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate()}
-                    mode="date"
-                    display="default"
-                    maximumDate={new Date()}
-                    onChange={onDateChange}
-                />
-            )}
+            {/* 🌟 NUEVO MODAL CROSS-PLATFORM INTEGRADO CORRECTAMENTE */}
+            <Modal
+                visible={showDatePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDatePicker(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Text style={styles.modalTitle}>Selecciona el inicio del periodo</Text>
+                        <Calendar
+                            current={dayjs(selectedPeriodDate).format('YYYY-MM-DD')}
+                            maxDate={dayjs().format('YYYY-MM-DD')}
+                            onDayPress={(day) => {
+                                setSelectedPeriodDate(new Date(`${day.dateString}T00:00:00`));
+                            }}
+                            markedDates={{
+                                [dayjs(selectedPeriodDate).format('YYYY-MM-DD')]: {
+                                    selected: true,
+                                    selectedColor: Colors.botones || '#6A5ACD'
+                                }
+                            }}
+                            theme={{
+                                backgroundColor: '#1F1E29',
+                                calendarBackground: '#1F1E29',
+                                textSectionTitleColor: 'rgba(255,255,255,0.8)',
+                                selectedDayBackgroundColor: Colors.botones || '#6A5ACD',
+                                selectedDayTextColor: '#ffffff',
+                                todayTextColor: Colors.botones || '#6A5ACD',
+                                dayTextColor: 'rgba(255,255,255,0.9)',
+                                monthTextColor: 'white',
+                                arrowColor: 'white',
+                                textDisabledColor: 'rgba(255,255,255,0.2)',
+                            }}
+                            style={styles.calendarPicker}
+                        />
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalCancelButton]}
+                                onPress={() => setShowDatePicker(false)}
+                            >
+                                <Text style={styles.modalCancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalSaveButton]}
+                                onPress={handleSavePeriodDate}
+                            >
+                                <Text style={styles.modalSaveText}>Guardar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -292,12 +343,10 @@ export default function CalendarScreen() {
 
                                 const uniqueKey = `${year}-${monthName}-${index}`;
 
-                                // 🌟 LÓGICA DEL CORAZÓN BASADA EN LA BASE DE DATOS
                                 let showHeart = false;
                                 let showLock = false;
 
                                 if (dayItem.day) {
-                                    // Buscamos la fecha exacta del día en el estado descargado de Firebase
                                     const dateStr = currentMonth.date(dayItem.day).format('YYYY-MM-DD');
                                     const tracking = dailyTracking[dateStr];
                                     const tipoSexoLog = tracking?.sexualidad_fertilidad?.actividad_sexual;
@@ -344,13 +393,12 @@ export default function CalendarScreen() {
                                                     </Text>
                                                 </View>
 
-                                                {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
+                                                {dayItem.isOverlaysDay && mostrarColor && !isArtificial && (
                                                     <View style={styles.moonIcon}>
                                                         <View style={styles.fullMoon} />
                                                     </View>
                                                 )}
 
-                                                {/* 🌟 RENDERIZAMOS EL CORAZÓN CON SU RESPECTIVO CANDADO */}
                                                 {showHeart && (
                                                     <View style={styles.sexHeartContainer}>
                                                         <FontAwesome name="heart" size={12} color="#FF69B4" />
@@ -548,7 +596,6 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 5,
     },
-    /* 🌟 ESTILOS DE LOS CORAZONES */
     sexHeartContainer: {
         position: 'absolute',
         bottom: -6,
@@ -559,7 +606,7 @@ const styles = StyleSheet.create({
     sexLockIcon: {
         position: 'absolute',
         zIndex: 5,
-        top: 2 // Para que el candado quede bien centrado dentro del corazón
+        top: 2
     },
     bottomButtonContainer: {
         marginTop: 0,
@@ -576,5 +623,66 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 14,
-    }
+    },
+
+    // 🌟 ESTILOS AGREGADOS PARA EL MODAL DEL CALENDARIO
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    modalCard: {
+        width: '100%',
+        backgroundColor: '#1F1E29',
+        borderRadius: 24,
+        padding: 20,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    modalTitle: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    calendarPicker: {
+        width: screenWidth - 80,
+        borderRadius: 15,
+        marginBottom: 15,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: 10,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalCancelButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    modalSaveButton: {
+        backgroundColor: Colors.botones || '#6A5ACD',
+    },
+    modalCancelText: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontWeight: '600',
+        fontSize: 14,
+    },
+    modalSaveText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
 });

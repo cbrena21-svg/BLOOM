@@ -394,7 +394,7 @@ export default function CalendarScreen() {
                                                     </Text>
                                                 </View>
 
-                                                {dayItem.isOverlaysDay && mostrarColor && !isArtificial && (
+                                                {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
                                                     <View style={styles.moonIcon}>
                                                         <View style={styles.fullMoon} />
                                                     </View>

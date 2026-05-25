@@ -9,7 +9,7 @@ import { useCyclePhase } from '../../hooks/useCyclePhase';
 import { Colors } from '../../styles/colors';
 import { logout } from '../../services/authService';
 import { getLastPeriodDate, getCycleLength } from '../../services/storageService';
-import { getCurrentCycleDay } from '../../utils/dateHelpers';
+import { getCurrentCycleDay } from '../../utils/cycleCalculator';
 import { auth } from '../../services/firebaseConfig';
 
 export default function HomeScreen() {

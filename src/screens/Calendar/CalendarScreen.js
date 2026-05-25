@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Dimensions,
-    ActivityIndicator,
-    Alert,
-    Image
-} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Image, Platform, Modal} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
@@ -55,6 +45,7 @@ export default function CalendarScreen() {
     const [userProfile, setUserProfile] = useState(null);
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedPeriodDate, setSelectedPeriodDate] = useState(dayjs().toDate());
 
     useEffect(() => {
         const loadUserProfile = async () => {
@@ -79,7 +70,7 @@ export default function CalendarScreen() {
 
             let daysWithPhases = getMonthWithPhases(currentMonth, userProfile);
 
-            // 🌟 LOGICA DE UX: Limpiar predicciones y fases antes del primer periodo registrado
+            //LOGICA DE UX: Limpiar predicciones y fases antes del primer periodo registrado
             const historial = userProfile?.periods_history || [];
             if (historial.length > 0) {
                 const primerPeriodo = historial[0]; // El primer elemento es el más antiguo por el .sort()
@@ -108,70 +99,81 @@ export default function CalendarScreen() {
 
     const handlePrevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
     const handleNextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
-    const handleEditPeriod = () => setShowDatePicker(true);
+    const handleEditPeriod = () => {
+        setSelectedPeriodDate(currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate());
+        setShowDatePicker(true);
+    };
 
-    const onDateChange = async (event, selectedDate) => {
-        setShowDatePicker(false);
+    const onDateChange = (event, selectedDate) => {
         if (selectedDate) {
-            setLoading(true);
-            const fechaInicioString = dayjs(selectedDate).format('YYYY-MM-DD');
-            const M = Number(userProfile?.inp_period_length) || 5;
-            const fechaFinString = dayjs(selectedDate).add(M - 1, 'day').format('YYYY-MM-DD');
+            setSelectedPeriodDate(selectedDate);
+        }
+    };
 
-            try {
-                const uid = auth.currentUser?.uid;
-                const userDocRef = doc(db, 'users', uid);
-                const historialActual = userProfile?.periods_history || [];
-                const mesSeleccionadoStr = dayjs(selectedDate).format('YYYY-MM');
-                const historialFiltrado = historialActual.filter(item => !item.startDate.startsWith(mesSeleccionadoStr));
+    const handleSavePeriodDate = async () => {
+        setShowDatePicker(false);
+        if (!selectedPeriodDate) {
+            return;
+        }
 
-                const nuevoRegistroPeriodo = {
-                    startDate: fechaInicioString,
-                    endDate: fechaFinString,
-                    duration: M
-                };
+        setLoading(true);
+        const fechaInicioString = dayjs(selectedPeriodDate).format('YYYY-MM-DD');
+        const M = Number(userProfile?.inp_period_length) || 5;
+        const fechaFinString = dayjs(selectedPeriodDate).add(M - 1, 'day').format('YYYY-MM-DD');
 
-                const nuevoHistorialActualizado = [...historialFiltrado, nuevoRegistroPeriodo].sort(
-                    (a, b) => dayjs(a.startDate).diff(dayjs(b.startDate))
-                );
+        try {
+            const uid = auth.currentUser?.uid;
+            const userDocRef = doc(db, 'users', uid);
+            const historialActual = userProfile?.periods_history || [];
+            const mesSeleccionadoStr = dayjs(selectedPeriodDate).format('YYYY-MM');
+            const historialFiltrado = historialActual.filter(item => !item.startDate.startsWith(mesSeleccionadoStr));
 
-                const ultimoPeriodoRegistrado = nuevoHistorialActualizado[nuevoHistorialActualizado.length - 1];
-                const nuevoLmpGlobal = ultimoPeriodoRegistrado ? ultimoPeriodoRegistrado.startDate : fechaInicioString;
+            const nuevoRegistroPeriodo = {
+                startDate: fechaInicioString,
+                endDate: fechaFinString,
+                duration: M
+            };
 
-                let nuevoPromedioCiclo = Number(userProfile?.inp_cycle_length) || 28;
-                if (nuevoHistorialActualizado.length > 1) {
-                    let totalDays = 0;
-                    let intervals = 0;
-                    const recentHistory = nuevoHistorialActualizado.slice(-7);
-                    for (let i = 1; i < recentHistory.length; i++) {
-                        const prevDate = dayjs(recentHistory[i - 1].startDate);
-                        const currDate = dayjs(recentHistory[i].startDate);
-                        totalDays += currDate.diff(prevDate, 'day');
-                        intervals++;
-                    }
-                    if (intervals > 0) {
-                        nuevoPromedioCiclo = Math.round(totalDays / intervals);
-                    }
+            const nuevoHistorialActualizado = [...historialFiltrado, nuevoRegistroPeriodo].sort(
+                (a, b) => dayjs(a.startDate).diff(dayjs(b.startDate))
+            );
+
+            const ultimoPeriodoRegistrado = nuevoHistorialActualizado[nuevoHistorialActualizado.length - 1];
+            const nuevoLmpGlobal = ultimoPeriodoRegistrado ? ultimoPeriodoRegistrado.startDate : fechaInicioString;
+
+            let nuevoPromedioCiclo = Number(userProfile?.inp_cycle_length) || 28;
+            if (nuevoHistorialActualizado.length > 1) {
+                let totalDays = 0;
+                let intervals = 0;
+                const recentHistory = nuevoHistorialActualizado.slice(-7);
+                for (let i = 1; i < recentHistory.length; i++) {
+                    const prevDate = dayjs(recentHistory[i - 1].startDate);
+                    const currDate = dayjs(recentHistory[i].startDate);
+                    totalDays += currDate.diff(prevDate, 'day');
+                    intervals++;
                 }
-
-                await updateDoc(userDocRef, {
-                    periods_history: nuevoHistorialActualizado,
-                    inp_lmp_date: nuevoLmpGlobal,
-                    avg_cycle_length: nuevoPromedioCiclo
-                });
-
-                setUserProfile({
-                    ...userProfile,
-                    periods_history: nuevoHistorialActualizado,
-                    inp_lmp_date: nuevoLmpGlobal,
-                    avg_cycle_length: nuevoPromedioCiclo
-                });
-                Alert.alert("¡Guardado!", "Tu ciclo ha sido actualizado.");
-            } catch (error) {
-                Alert.alert("Error", "No se pudo conectar con el servidor.");
-            } finally {
-                setLoading(false);
+                if (intervals > 0) {
+                    nuevoPromedioCiclo = Math.round(totalDays / intervals);
+                }
             }
+
+            await updateDoc(userDocRef, {
+                periods_history: nuevoHistorialActualizado,
+                inp_lmp_date: nuevoLmpGlobal,
+                avg_cycle_length: nuevoPromedioCiclo
+            });
+
+            setUserProfile({
+                ...userProfile,
+                periods_history: nuevoHistorialActualizado,
+                inp_lmp_date: nuevoLmpGlobal,
+                avg_cycle_length: nuevoPromedioCiclo
+            });
+            Alert.alert("¡Guardado!", "Tu ciclo ha sido actualizado.");
+        } catch (error) {
+            Alert.alert("Error", "No se pudo conectar con el servidor.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -197,15 +199,40 @@ export default function CalendarScreen() {
                 />
             </View>
 
-            {showDatePicker && (
-                <DateTimePicker
-                    value={currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate()}
-                    mode="date"
-                    display="default"
-                    maximumDate={new Date()}
-                    onChange={onDateChange}
-                />
-            )}
+            <Modal
+                visible={showDatePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDatePicker(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <Text style={styles.modalTitle}>Selecciona el inicio del periodo</Text>
+                        <DateTimePicker
+                            value={selectedPeriodDate > new Date() ? new Date() : selectedPeriodDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            maximumDate={new Date()}
+                            onChange={onDateChange}
+                            style={styles.datePicker}
+                        />
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalCancelButton]}
+                                onPress={() => setShowDatePicker(false)}
+                            >
+                                <Text style={styles.modalCancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.modalSaveButton]}
+                                onPress={handleSavePeriodDate}
+                            >
+                                <Text style={styles.modalSaveText}>Guardar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -434,6 +461,55 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 15,
         marginBottom: 20,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    datePicker: {
+        width: '100%',
+        height: 220,
+    },
+    modalCard: {
+        backgroundColor: '#1F1E29',
+        borderRadius: 24,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+    },
+    modalTitle: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 16,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    modalCancelButton: {
+        backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    modalSaveButton: {
+        backgroundColor: Colors.botones || '#6A5ACD',
+    },
+    modalCancelText: {
+        color: 'white',
+        fontWeight: '700',
+    },
+    modalSaveText: {
+        color: '#0D0D1E',
+        fontWeight: '800',
     },
     weekdaysContainer: {
         flexDirection: 'row',

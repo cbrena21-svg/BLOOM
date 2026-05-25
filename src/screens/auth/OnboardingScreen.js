@@ -1,23 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
-    ScrollView,
-    Image,
-    Animated,
-    Easing,
-    Dimensions,
-    Platform,
-    Alert
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Animated, Easing, Dimensions, Alert, Platform, Modal } from 'react-native';
 import { Colors } from '../../styles/colors';
 import { guardarPerfilOnboarding } from '../../services/authService';
 import { calcularPerfilClinico } from '../../utils/clicnicCalculator';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar } from 'react-native-calendars';
 
 const { width } = Dimensions.get('window');
 
@@ -48,6 +36,8 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
 
     const totalPaginas = 15;
     const ageScrollViewRef = useRef(null);
+
+    const [tempLmpDate, setTempLmpDate] = useState(onboardingData.inp_lmp_date || new Date());
 
     const opcionesAnticonceptivos = [
         'Ninguno', 'Pastillas combinadas', 'Mini-píldora (Solo Progesterona)',
@@ -181,10 +171,27 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
     const onDateChange = (event, selectedDate) => {
         if (Platform.OS === 'android') {
             setShowCalendar(false);
+            if (selectedDate) {
+                setOnboardingData(prev => ({ ...prev, inp_lmp_date: selectedDate }));
+            }
+            return;
         }
+
         if (selectedDate) {
-            setOnboardingData(prev => ({ ...prev, inp_lmp_date: selectedDate }));
+            setTempLmpDate(selectedDate);
         }
+    };
+
+    const openCalendar = () => {
+        setTempLmpDate(onboardingData.inp_lmp_date || new Date());
+        setShowCalendar(true);
+    };
+
+    const cancelCalendar = () => setShowCalendar(false);
+
+    const saveCalendar = () => {
+        setOnboardingData(prev => ({ ...prev, inp_lmp_date: tempLmpDate }));
+        setShowCalendar(false);
     };
 
     // ---- LISTAS PARA PREGUNTAS 8 A 11 ----
@@ -336,36 +343,55 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                         <Text style={styles.questionTitle}>¿Cuándo inició tu último periodo?</Text>
                         <Text style={styles.questionSubtitle}>Cuenta el primer día de flujo abundante, no manchas.</Text>
                         <View style={styles.calendarCard}>
-                            {Platform.OS === 'ios' ? (
-                                <>
-                                    <Text style={styles.dateDisplay}>{formatearFecha(onboardingData.inp_lmp_date)}</Text>
-                                    <DateTimePicker
-                                        value={onboardingData.inp_lmp_date}
-                                        mode="date"
-                                        display="inline"
-                                        maximumDate={new Date()}
-                                        minimumDate={fechaMinima}
-                                        themeVariant="dark"
-                                        onChange={onDateChange}
-                                        style={styles.nativePicker}
-                                    />
-                                </>
-                            ) : (
-                                <>
-                                    <TouchableOpacity style={styles.dateDisplayButtonAndroid} onPress={() => setShowCalendar(true)}>
-                                        <Text style={styles.dateDisplayTextAndroid}> {formatearFecha(onboardingData.inp_lmp_date)}</Text>
-                                    </TouchableOpacity>
-                                    {showCalendar && (
-                                        <DateTimePicker
-                                            value={onboardingData.inp_lmp_date}
-                                            mode="date"
-                                            display="default"
-                                            maximumDate={new Date()}
-                                            minimumDate={fechaMinima}
-                                            onChange={onDateChange}
-                                        />
-                                    )}
-                                </>
+                            <Text style={styles.dateDisplay}>{formatearFecha(onboardingData.inp_lmp_date)}</Text>
+                            <TouchableOpacity style={styles.dateDisplayButtonAndroid} onPress={openCalendar}>
+                                <Text style={styles.dateDisplayTextAndroid}>Seleccionar fecha</Text>
+                            </TouchableOpacity>
+
+                            {showCalendar && (
+                                <Modal
+                                    visible={showCalendar}
+                                    transparent
+                                    animationType="fade"
+                                    onRequestClose={cancelCalendar}
+                                >
+                                    <View style={styles.modalOverlay}>
+                                        <View style={styles.modalCard}>
+                                            <Text style={styles.modalTitle}>Selecciona el inicio del periodo</Text>
+                                            <Calendar
+                                                current={tempLmpDate.toISOString().split('T')[0]}
+                                                minDate={fechaMinima.toISOString().split('T')[0]}
+                                                maxDate={new Date().toISOString().split('T')[0]}
+                                                onDayPress={(day) => {
+                                                    const selected = new Date(day.dateString + 'T00:00:00');
+                                                    setTempLmpDate(selected);
+                                                }}
+                                                markedDates={{
+                                                    [tempLmpDate.toISOString().split('T')[0]]: { selected: true, selectedColor: Colors.botones || '#6A5ACD' }
+                                                }}
+                                                theme={{
+                                                    backgroundColor: '#1F1E29',
+                                                    calendarBackground: '#1F1E29',
+                                                    textSectionTitleColor: 'rgba(255,255,255,0.8)',
+                                                    selectedDayBackgroundColor: Colors.botones || '#6A5ACD',
+                                                    selectedDayTextColor: '#ffffff',
+                                                    todayTextColor: Colors.botones || '#6A5ACD',
+                                                    dayTextColor: 'rgba(255,255,255,0.9)',
+                                                    monthTextColor: 'white',
+                                                    arrowColor: 'white',
+                                                }}
+                                            />
+                                            <View style={styles.modalActions}>
+                                                <TouchableOpacity style={[styles.modalButton, styles.modalCancelButton]} onPress={cancelCalendar}>
+                                                    <Text style={styles.modalCancelText}>Cancelar</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity style={[styles.modalButton, styles.modalSaveButton]} onPress={saveCalendar}>
+                                                    <Text style={styles.modalSaveText}>Guardar</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </Modal>
                             )}
                         </View>
                     </View>
@@ -895,6 +921,27 @@ const styles = StyleSheet.create({
     dateDisplayButtonAndroid: { backgroundColor: 'rgba(255, 255, 255, 0.06)', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)', marginTop: 20 },
     dateDisplayTextAndroid: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
     nativePicker: { width: '100%', height: 160 },
+
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    modalCard: {
+        backgroundColor: '#1F1E29',
+        borderRadius: 18,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.06)'
+    },
+    modalTitle: { color: 'white', fontSize: 16, fontWeight: '700', marginBottom: 10, textAlign: 'center' },
+    modalActions: { flexDirection: 'row', gap: 12, marginTop: 12 },
+    modalButton: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
+    modalCancelButton: { backgroundColor: 'rgba(255,255,255,0.06)' },
+    modalSaveButton: { backgroundColor: Colors.botones || '#6A5ACD' },
+    modalCancelText: { color: 'white', fontWeight: '700' },
+    modalSaveText: { color: '#0D0D1E', fontWeight: '800' },
 
     // Pág 4: Counter UI
     counterContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: 20 },

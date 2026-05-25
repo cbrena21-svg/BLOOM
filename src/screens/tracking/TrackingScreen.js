@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../styles/colors';
@@ -533,6 +533,24 @@ export default function TrackingScreen() {
                     )}
                 </View>
 
+                {/* --- SECCIÓN 5: NOTAS --- */}
+                <View style={[styles.moduleContainer, { marginTop: 15, marginBottom: 20 }]}>
+                    <Text style={styles.sectionTitle}>Notas del día</Text>
+                    <Text style={styles.labelSub}>
+                        Espacio libre para registrar cómo te sientes, antojos o cualquier detalle importante.
+                    </Text>
+                    <TextInput
+                        style={styles.textInputStyle}
+                        multiline
+                        value={notas}
+                        onChangeText={setNotas}
+                        placeholder="Escribe algo sobre tu día..."
+                        placeholderTextColor="#666"
+                    />
+                </View>
+
+                {/* BOTÓN GUARDAR (Este ya lo tienes, va justo debajo) */}
+
                 {/* BOTÓN GUARDAR */}
                 <TouchableOpacity
                     style={[styles.saveButton, cargando && { opacity: 0.6 }]}
@@ -617,4 +635,6 @@ const styles = StyleSheet.create({
     sexUnsafeSelected: { backgroundColor: '#E74C3C' },
     protectionSelected: { backgroundColor: '#4A1525' },
     verificationSuccessSelected: { backgroundColor: '#5CB85C' },
+    // Agrégalo al final de tu StyleSheet
+    textInputStyle: { borderWidth: 1, borderColor: '#2E2E42', backgroundColor: '#1A1A2E', color: 'white', borderRadius: 12, padding: 15, minHeight: 100, textAlignVertical: 'top', marginTop: 5, fontSize: 14, },
 });

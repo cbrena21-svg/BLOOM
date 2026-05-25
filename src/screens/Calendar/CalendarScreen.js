@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Alert, Image, Platform, Modal} from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    Dimensions,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal // 🌟 Agregado el Modal de react-native
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
 import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar } from 'react-native-calendars'; // 🌟 Cambiado por el calendario cross-platform
 import { db, auth } from '../../services/firebaseConfig';
 import { doc, updateDoc } from 'firebase/firestore';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
+import { obtenerTrackingMensual } from '../../services/trackingService';
 import {
     getMonthWithPhases,
     getMonthName,
     getYear
 } from '../../utils/dateHelpers';
 import dayjs from 'dayjs';
+import { FontAwesome } from '@expo/vector-icons';
 
 const phases = {
     menstrual: Colors.menstrual,
@@ -46,7 +59,10 @@ export default function CalendarScreen() {
     const [userProfile, setUserProfile] = useState(null);
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [showDatePicker, setShowDatePicker] = useState(false);
+
+    // 🌟 Estados clave integrados
     const [selectedPeriodDate, setSelectedPeriodDate] = useState(dayjs().toDate());
+    const [dailyTracking, setDailyTracking] = useState({});
 
     useEffect(() => {
         const loadUserProfile = async () => {
@@ -71,22 +87,20 @@ export default function CalendarScreen() {
 
             let daysWithPhases = getMonthWithPhases(currentMonth, userProfile);
 
-            //LOGICA DE UX: Limpiar predicciones y fases antes del primer periodo registrado
             const historial = userProfile?.periods_history || [];
             if (historial.length > 0) {
-                const primerPeriodo = historial[0]; // El primer elemento es el más antiguo por el .sort()
+                const primerPeriodo = historial[0];
                 const fechaLimite = dayjs(primerPeriodo.startDate).startOf('day');
 
                 daysWithPhases = daysWithPhases.map(dayItem => {
                     if (dayItem.day) {
                         const fechaDia = currentMonth.date(dayItem.day).startOf('day');
-                        // Si el día evaluado es estrictamente anterior al primer registro, lo limpiamos
                         if (fechaDia.isBefore(fechaLimite)) {
                             return {
                                 ...dayItem,
                                 phase: null,
                                 isPrediction: false,
-                                cycleDay: null // Quitamos también el número de la esquina en el pasado remoto
+                                cycleDay: null
                             };
                         }
                     }
@@ -95,27 +109,31 @@ export default function CalendarScreen() {
             }
 
             setMonthDays(daysWithPhases);
+
+            const fetchTracking = async () => {
+                const mesAnoStr = currentMonth.format('YYYY-MM');
+                const res = await obtenerTrackingMensual(mesAnoStr);
+                if (res.success) {
+                    setDailyTracking(res.data);
+                }
+            };
+            fetchTracking();
         }
     }, [currentMonth, userProfile]);
 
     const handlePrevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
     const handleNextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
+
+    // 🌟 Manejo de apertura del nuevo Modal estilo tu amiga
     const handleEditPeriod = () => {
         setSelectedPeriodDate(currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate());
         setShowDatePicker(true);
     };
 
-    const onDateChange = (event, selectedDate) => {
-        if (selectedDate) {
-            setSelectedPeriodDate(selectedDate);
-        }
-    };
-
+    // 🌟 Nueva función para procesar y guardar la fecha seleccionada en el Modal
     const handleSavePeriodDate = async () => {
         setShowDatePicker(false);
-        if (!selectedPeriodDate) {
-            return;
-        }
+        if (!selectedPeriodDate) return;
 
         setLoading(true);
         const fechaInicioString = dayjs(selectedPeriodDate).format('YYYY-MM-DD');
@@ -200,6 +218,7 @@ export default function CalendarScreen() {
                 />
             </View>
 
+            {/* 🌟 NUEVO MODAL CROSS-PLATFORM INTEGRADO CORRECTAMENTE */}
             <Modal
                 visible={showDatePicker}
                 transparent
@@ -209,13 +228,31 @@ export default function CalendarScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalCard}>
                         <Text style={styles.modalTitle}>Selecciona el inicio del periodo</Text>
-                        <DateTimePicker
-                            value={selectedPeriodDate > new Date() ? new Date() : selectedPeriodDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            maximumDate={new Date()}
-                            onChange={onDateChange}
-                            style={styles.datePicker}
+                        <Calendar
+                            current={dayjs(selectedPeriodDate).format('YYYY-MM-DD')}
+                            maxDate={dayjs().format('YYYY-MM-DD')}
+                            onDayPress={(day) => {
+                                setSelectedPeriodDate(new Date(`${day.dateString}T00:00:00`));
+                            }}
+                            markedDates={{
+                                [dayjs(selectedPeriodDate).format('YYYY-MM-DD')]: {
+                                    selected: true,
+                                    selectedColor: Colors.botones || '#6A5ACD'
+                                }
+                            }}
+                            theme={{
+                                backgroundColor: '#1F1E29',
+                                calendarBackground: '#1F1E29',
+                                textSectionTitleColor: 'rgba(255,255,255,0.8)',
+                                selectedDayBackgroundColor: Colors.botones || '#6A5ACD',
+                                selectedDayTextColor: '#ffffff',
+                                todayTextColor: Colors.botones || '#6A5ACD',
+                                dayTextColor: 'rgba(255,255,255,0.9)',
+                                monthTextColor: 'white',
+                                arrowColor: 'white',
+                                textDisabledColor: 'rgba(255,255,255,0.2)',
+                            }}
+                            style={styles.calendarPicker}
                         />
                         <View style={styles.modalActions}>
                             <TouchableOpacity
@@ -292,10 +329,7 @@ export default function CalendarScreen() {
                                 const basePhaseColor = phases[phase] || 'rgba(255,255,255,0.2)';
                                 let circleColor = mostrarColor ? phases[phase] : 'transparent';
 
-                                // Identificamos si es una predicción menstrual sin importar el filtro de color activo
                                 const esMenstrualPrediccion = phase === 'menstrual' && dayItem.isPrediction;
-
-                                // 🌟 SOLUCIÓN AL APAGADO DE FILTROS: Estilos estables y explícitos sin valores null
                                 const mostrarEfectoPrediccion = esMenstrualPrediccion && mostrarColor;
 
                                 const estiloCirculoDinamico = {
@@ -310,12 +344,29 @@ export default function CalendarScreen() {
 
                                 const uniqueKey = `${year}-${monthName}-${index}`;
 
+                                let showHeart = false;
+                                let showLock = false;
+
+                                if (dayItem.day) {
+                                    const dateStr = currentMonth.date(dayItem.day).format('YYYY-MM-DD');
+                                    const tracking = dailyTracking[dateStr];
+                                    const tipoSexoLog = tracking?.sexualidad_fertilidad?.actividad_sexual;
+
+                                    if (tipoSexoLog === 'si' || tipoSexoLog === 'con_proteccion' || tipoSexoLog === 'sin_proteccion') {
+                                        showHeart = true;
+                                        if (isArtificial) {
+                                            showLock = true;
+                                        } else if (tipoSexoLog === 'con_proteccion') {
+                                            showLock = true;
+                                        }
+                                    }
+                                }
+
                                 return (
                                     <View key={uniqueKey} style={styles.dayCell}>
                                         {dayItem.day ? (
                                             <View style={styles.cellContent}>
 
-                                                {/* El número de día de ciclo se oculta automáticamente si es nulo en el pasado */}
                                                 {dayItem.cycleDay ? (
                                                     <Text style={styles.cycleDayCorner}>
                                                         {dayItem.cycleDay}
@@ -346,6 +397,15 @@ export default function CalendarScreen() {
                                                 {dayItem.isOvulationDay && mostrarColor && !isArtificial && (
                                                     <View style={styles.moonIcon}>
                                                         <View style={styles.fullMoon} />
+                                                    </View>
+                                                )}
+
+                                                {showHeart && (
+                                                    <View style={styles.sexHeartContainer}>
+                                                        <FontAwesome name="heart" size={12} color="#FF69B4" />
+                                                        {showLock && (
+                                                            <FontAwesome name="lock" size={7} color="#FFFFFF" style={styles.sexLockIcon} />
+                                                        )}
                                                     </View>
                                                 )}
 
@@ -465,58 +525,6 @@ const styles = StyleSheet.create({
         padding: 15,
         marginBottom: 20,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.65)',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
-    },
-    datePicker: {
-        width: '100%',
-        height: 220,
-    },
-    modalCard: {
-        backgroundColor: '#1F1E29',
-        borderRadius: 24,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-    },
-    modalTitle: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '700',
-        fontFamily: FONT_BOLD,
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    modalActions: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 16,
-    },
-    modalButton: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 16,
-        alignItems: 'center',
-    },
-    modalCancelButton: {
-        backgroundColor: 'rgba(255,255,255,0.08)',
-    },
-    modalSaveButton: {
-        backgroundColor: Colors.botones || '#6A5ACD',
-    },
-    modalCancelText: {
-        color: 'white',
-        fontWeight: '700',
-        fontFamily: FONT_REGULAR,
-    },
-    modalSaveText: {
-        color: '#0D0D1E',
-        fontWeight: '800',
-        fontFamily: FONT_BOLD,
-    },
     weekdaysContainer: {
         flexDirection: 'row',
         marginBottom: 15,
@@ -583,34 +591,6 @@ const styles = StyleSheet.create({
         bottom: -2,
         zIndex: 3,
     },
-    sexHeartIcon: {
-        position: 'absolute',
-        top: -1,
-        right: -1,
-        zIndex: 4,
-        width: 12,
-        height: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    sexHeartProtected: {
-        transform: [{ scale: 0.95 }],
-    },
-    sexHeartUnprotected: {
-        transform: [{ scale: 1 }],
-    },
-    sexHeartHormonal: {
-        transform: [{ scale: 0.95 }],
-    },
-    sexHeartText: {
-        color: '#FF5C8A',
-        fontSize: 11,
-        fontWeight: '900',
-        fontFamily: FONT_BOLD,
-        textShadowColor: 'rgba(0,0,0,0.4)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 1,
-    },
     fullMoon: {
         width: 6,
         height: 6,
@@ -621,6 +601,18 @@ const styles = StyleSheet.create({
         shadowOpacity: 1,
         shadowRadius: 3,
         elevation: 5,
+    },
+    sexHeartContainer: {
+        position: 'absolute',
+        bottom: -6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 4,
+    },
+    sexLockIcon: {
+        position: 'absolute',
+        zIndex: 5,
+        top: 2
     },
     bottomButtonContainer: {
         marginTop: 0,
@@ -638,5 +630,67 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontFamily: FONT_BOLD,
         fontSize: 14,
-    }
+    },
+
+    // 🌟 ESTILOS AGREGADOS PARA EL MODAL DEL CALENDARIO
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    modalCard: {
+        width: '100%',
+        backgroundColor: '#1F1E29',
+        borderRadius: 24,
+        padding: 20,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    modalTitle: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: '700',
+        fontFamily: FONT_BOLD,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    calendarPicker: {
+        width: screenWidth - 80,
+        borderRadius: 15,
+        marginBottom: 15,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: 10,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalCancelButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    modalSaveButton: {
+        backgroundColor: Colors.botones || '#6A5ACD',
+    },
+    modalCancelText: {
+        color: 'white',
+        fontWeight: '700',
+        fontFamily: FONT_REGULAR,
+    },
+    modalSaveText: {
+        color: '#0D0D1E',
+        fontWeight: '800',
+        fontFamily: FONT_BOLD,
+    },
 });

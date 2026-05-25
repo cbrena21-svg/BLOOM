@@ -3,6 +3,7 @@ import {View,Text,StyleSheet,TouchableOpacity,Image,TextInput,Alert,ScrollView,A
 
 // Importamos tus herramientas globales
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import { useAuth } from '../../hooks/useAuth';
 import { signUp } from '../../services/authService'; // <--- Tu servicio profesional
 
@@ -184,12 +185,14 @@ const styles = StyleSheet.create({
         fontSize: 22,
         color: Colors.textoPrincipal,
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
         marginBottom: 10
     },
     text: {
         color: Colors.textoSecundario,
         marginBottom: 30,
         fontWeight: '350',
+        fontFamily: FONT_REGULAR,
         fontSize: 16,
     },
     input: {
@@ -219,6 +222,7 @@ const styles = StyleSheet.create({
     googleButtonText: {
         color: "#fff",
         fontSize: 14,
+        fontFamily: FONT_REGULAR,
     },
     signupButton: {
         width: '60%',
@@ -234,6 +238,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
     },
     linkContainer: {
         padding: 15,
@@ -241,10 +246,12 @@ const styles = StyleSheet.create({
     textNormal: {
         color: "#fff",
         fontSize: 13,
+        fontFamily: FONT_REGULAR,
     },
     textLink: {
         color: Colors.folicular || '#FFC0CB',
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
         textDecorationLine: 'underline',
     },
 });

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { Calendar } from 'react-native-calendars'; // 🌟 Cambiado por el calendario cross-platform
 import { db, auth } from '../../services/firebaseConfig';
@@ -387,7 +388,7 @@ export default function CalendarScreen() {
                                                     <Text style={[
                                                         styles.dayText,
                                                         estiloTextoDinamico,
-                                                        dayItem.isToday ? { fontWeight: '800' } : null
+                                                        dayItem.isToday ? { fontWeight: '800', fontFamily: FONT_BOLD } : null
                                                     ]}>
                                                         {dayItem.day}
                                                     </Text>
@@ -477,7 +478,8 @@ const styles = StyleSheet.create({
     filterText: {
         color: 'white',
         fontWeight: '600',
-        fontSize: 12
+        fontSize: 12,
+        fontFamily: FONT_REGULAR,
     },
     calendarBlockContainer: {
         flex: 1,
@@ -498,7 +500,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    arrowText: { color: 'white', fontSize: 10 },
+    arrowText: { color: 'white', fontSize: 10, fontFamily: FONT_BOLD },
     monthBanner: {
         backgroundColor: 'rgba(255,255,255,0.05)',
         paddingHorizontal: 24,
@@ -513,6 +515,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
         textTransform: 'capitalize',
         letterSpacing: 0.5
     },
@@ -531,7 +534,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: 'rgba(255,255,255,0.4)',
         fontSize: 12,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontFamily: FONT_BOLD
     },
     calendarGrid: {
         flexDirection: 'row',
@@ -570,7 +574,8 @@ const styles = StyleSheet.create({
     dayText: {
         color: 'rgba(255,255,255,0.8)',
         fontSize: 14,
-        fontWeight: '600'
+        fontWeight: '600',
+        fontFamily: FONT_REGULAR
     },
     cycleDayCorner: {
         position: 'absolute',
@@ -578,7 +583,8 @@ const styles = StyleSheet.create({
         right: 2,
         fontSize: 8,
         color: 'rgba(255,255,255,0.3)',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontFamily: FONT_BOLD
     },
     moonIcon: {
         position: 'absolute',
@@ -622,6 +628,7 @@ const styles = StyleSheet.create({
     mainEditButtonText: {
         color: 'white',
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
         fontSize: 14,
     },
 
@@ -644,9 +651,10 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 15,
+        fontSize: 18,
+        fontWeight: '700',
+        fontFamily: FONT_BOLD,
+        marginBottom: 12,
         textAlign: 'center',
     },
     calendarPicker: {
@@ -676,13 +684,13 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.botones || '#6A5ACD',
     },
     modalCancelText: {
-        color: 'rgba(255, 255, 255, 0.6)',
-        fontWeight: '600',
-        fontSize: 14,
+        color: 'white',
+        fontWeight: '700',
+        fontFamily: FONT_REGULAR,
     },
     modalSaveText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 14,
+        color: '#0D0D1E',
+        fontWeight: '800',
+        fontFamily: FONT_BOLD,
     },
 });

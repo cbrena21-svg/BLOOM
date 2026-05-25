@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 
 export default function NotificationSettingsScreen() {
@@ -32,6 +33,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 36,
         fontWeight: '800',
+        fontFamily: FONT_BOLD,
         marginBottom: 12,
     },
     message: {
@@ -39,5 +41,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center',
         opacity: 0.85,
+        fontFamily: FONT_REGULAR,
     },
 });

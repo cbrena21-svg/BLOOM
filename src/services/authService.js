@@ -1,6 +1,7 @@
 import { auth, db } from './firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { calcularPerfilClinico } from '../utils/clicnicCalculator';
+import { saveOnboardingProfile } from './storageService';
 
 import {
     createUserWithEmailAndPassword,
@@ -97,6 +98,13 @@ export const guardarPerfilOnboarding = async (inputsRaw) => {
 
         // Guardamos el documento en Firestore usando el UID del usuario como ID del documento
         await setDoc(doc(db, "users", user.uid), perfilCompleto);
+
+        //guardamos una copia local en AsyncStorage para acceso rápido en la app -majo profileScreen
+        try {
+            await saveOnboardingProfile(perfilCompleto, user.uid);
+        } catch (err) {
+            console.warn('No se pudo guardar perfil en storage local:', err);
+        }
 
         return { success: true };
     } catch (error) {

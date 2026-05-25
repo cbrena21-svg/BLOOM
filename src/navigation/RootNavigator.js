@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 // 1. Importamos las herramientas nativas de Firestore
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseConfig';
+import { getOnboardingProfile } from '../services/storageService';
 
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
@@ -44,8 +45,25 @@ export default function RootNavigator() {
                 }
             } catch (error) {
                 console.error("Error comprobando onboarding en Firestore:", error);
-                setUser(null);
-                setFirstTime(false);
+                // Fallback: si falla la conexión a Firestore, intentamos leer el perfil local -majo profileScreen
+                try {
+                    if (authenticatedUser && authenticatedUser.uid) {
+                        const local = await getOnboardingProfile(authenticatedUser.uid);
+                        if (local.success && local.data) {
+                            setFirstTime(false);
+                        } else {
+                            setFirstTime(true);
+                        }
+                        setUser(authenticatedUser);
+                    } else {
+                        setUser(null);
+                        setFirstTime(false);
+                    }
+                } catch (e) {
+                    console.error('Error leyendo perfil local como fallback:', e);
+                    setUser(authenticatedUser || null);
+                    setFirstTime(false);
+                }
             } finally {
                 setLoading(false);
             }

@@ -3,6 +3,7 @@ import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { guardarTrackingDiario } from '../../services/trackingService';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
@@ -571,25 +572,25 @@ export default function TrackingScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.fondo },
     scrollContent: { padding: 20, paddingBottom: 140 },
-    title: { color: 'white', fontSize: 34, fontWeight: '800' },
+    title: { color: 'white', fontSize: 34, fontWeight: '800', fontFamily: FONT_BOLD },
     moduleContainer: { borderRadius: 16, backgroundColor: '#0D0D1E', padding: 18, position: 'relative', overflow: 'hidden' },
     moduleLocked: { opacity: 0.25 },
     collapsibleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
     collapsibleContent: { marginTop: 10, borderTopWidth: 1, borderTopColor: '#2E2E42', paddingTop: 10 },
-    arrowIcon: { color: '#AAA', fontSize: 14, fontWeight: 'bold' },
+    arrowIcon: { color: '#AAA', fontSize: 14, fontWeight: 'bold', fontFamily: FONT_BOLD },
     titleHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-    sectionTitle: { color: 'white', fontSize: 18, fontWeight: '700' },
+    sectionTitle: { color: 'white', fontSize: 18, fontWeight: '700', fontFamily: FONT_BOLD },
     infoIconCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#2E2E42', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
-    infoIconText: { color: '#AAA', fontSize: 12, fontWeight: 'bold' },
+    infoIconText: { color: '#AAA', fontSize: 12, fontWeight: 'bold', fontFamily: FONT_BOLD },
     tooltipBox: { backgroundColor: '#1A1A2E', padding: 12, borderRadius: 10, marginBottom: 15, borderColor: '#2E2E42', borderWidth: 1 },
-    tooltipText: { color: '#BBB', fontSize: 12, lineHeight: 16 },
-    labelSub: { color: '#888', fontSize: 13, marginBottom: 10, marginTop: 10 },
-    labelSubMargin: { color: '#888', fontSize: 13, marginBottom: 12, marginTop: 20 },
+    tooltipText: { color: '#BBB', fontSize: 12, lineHeight: 16, fontFamily: FONT_REGULAR },
+    labelSub: { color: '#888', fontSize: 13, marginBottom: 10, marginTop: 10, fontFamily: FONT_REGULAR },
+    labelSubMargin: { color: '#888', fontSize: 13, marginBottom: 12, marginTop: 20, fontFamily: FONT_REGULAR },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 
     // --- ESTILOS DE PÍLDORAS BASE ---
     productPill: { backgroundColor: '#1A1A2E', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, marginBottom: 4 },
-    productPillText: { color: 'white', fontSize: 13, fontWeight: '600' },
+    productPillText: { color: 'white', fontSize: 13, fontWeight: '600', fontFamily: FONT_REGULAR },
 
     // --- COLORES ACTIVOS POR CATEGORÍA ---
     productPillSelected: { backgroundColor: Colors.menstrual || '#C81D25' },
@@ -605,27 +606,27 @@ const styles = StyleSheet.create({
     timeInputContainer: { marginTop: 5 },
     timePill: { backgroundColor: '#0D0D1E', borderWidth: 1, borderColor: '#2E2E42', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 15, marginBottom: 4 },
     timePillSelected: { backgroundColor: '#5CB85C', borderColor: '#5CB85C' },
-    timePillText: { color: 'white', fontSize: 13, fontWeight: '600' },
+    timePillText: { color: 'white', fontSize: 13, fontWeight: '600', fontFamily: FONT_REGULAR },
 
     counterSection: { marginTop: 15, backgroundColor: '#1A1A2E', padding: 12, borderRadius: 12 },
     counterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    counterUnitText: { color: 'white', fontSize: 18, fontWeight: '700', paddingLeft: 5 },
+    counterUnitText: { color: 'white', fontSize: 18, fontWeight: '700', paddingLeft: 5, fontFamily: FONT_BOLD },
     counterControls: { flexDirection: 'row', gap: 5 },
     counterBtn: { width: 40, height: 40, backgroundColor: '#0D0D1E', borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-    counterBtnText: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+    counterBtnText: { color: 'white', fontSize: 20, fontWeight: 'bold', fontFamily: FONT_BOLD },
     conditionalSection: { marginTop: 10, borderTopWidth: 1, borderTopColor: '#2E2E42', paddingTop: 5 },
     colorRow: { flexDirection: 'row', justifyContent: 'flex-start', gap: 25, marginTop: 5 },
     colorItemContainer: { alignItems: 'center' },
     colorCircle: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
     colorCircleSelected: { borderColor: 'white' },
-    colorCircleLabel: { color: '#AAA', fontSize: 11, marginTop: 6, fontWeight: '500' },
+    colorCircleLabel: { color: '#AAA', fontSize: 11, marginTop: 6, fontWeight: '500', fontFamily: FONT_REGULAR },
     clotsRow: { flexDirection: 'row', gap: 12, marginTop: 5 },
     clotButton: { flex: 1, backgroundColor: '#1A1A2E', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
     clotButtonNoSelected: { backgroundColor: '#2E2E42' },
     clotButtonYesSelected: { backgroundColor: Colors.menstrual || '#C81D25' },
-    clotButtonText: { color: 'white', fontSize: 15, fontWeight: '700' },
+    clotButtonText: { color: 'white', fontSize: 15, fontWeight: '700', fontFamily: FONT_BOLD },
     saveButton: { backgroundColor: 'white', borderRadius: 25, paddingVertical: 15, alignItems: 'center', marginTop: 30 },
-    saveButtonText: { color: Colors.fondo, fontSize: 16, fontWeight: '800' },
+    saveButtonText: { color: Colors.fondo, fontSize: 16, fontWeight: '800', fontFamily: FONT_BOLD },
 
     // --- ESTILOS SECCIÓN 4 (SEXUALIDAD) ---
     fluidPillSelected: { backgroundColor: '#E91E63' },

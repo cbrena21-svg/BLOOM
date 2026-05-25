@@ -3,6 +3,7 @@ import { Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Activ
 import { useNavigation } from '@react-navigation/native';
 import { resetPassword } from '../../services/authService';
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 
 export default function ForgotPasswordScreen() {
     const navigation = useNavigation();
@@ -122,6 +123,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         textDecorationLine: 'underline',
+        fontFamily: FONT_REGULAR,
     },
     title: {
         fontSize: 24,
@@ -129,6 +131,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         color: Colors.textoPrincipal,
         textAlign: 'center',
+        fontFamily: FONT_BOLD,
     },
     subtitle: {
         fontSize: 13,
@@ -136,6 +139,7 @@ const styles = StyleSheet.create({
         color: Colors.textoSecundario,
         textAlign: 'center',
         marginBottom: 24,
+        fontFamily: FONT_REGULAR,
     },
     input: {
         width: '90%',
@@ -163,5 +167,6 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontWeight: 'bold',
+        fontFamily: FONT_BOLD,
     },
 });

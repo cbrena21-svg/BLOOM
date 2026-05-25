@@ -1,5 +1,6 @@
 import React, {useRef} from 'react';
 import {View, Text, StyleSheet, PanResponder} from 'react-native';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 
 const SIZE = 300;
 const RADIUS = SIZE / 2;
@@ -172,6 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#C8B8D8',
     fontWeight: '600',
+    fontFamily: FONT_REGULAR,
     marginBottom: -2,
     },
 
@@ -179,6 +181,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#C8B8D8',
     fontWeight: '800',
+    fontFamily: FONT_BOLD,
     lineHeight: 18,
     },
 });

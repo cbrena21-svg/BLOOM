@@ -3,6 +3,7 @@ import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../styles/colors';
+import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 
 const moods = [
@@ -132,6 +133,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 34,
         fontWeight: '800',
+        fontFamily: FONT_BOLD,
         marginBottom: 20,
     },
 
@@ -139,6 +141,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 22,
         fontWeight: '700',
+        fontFamily: FONT_BOLD,
         marginBottom: 15,
         marginTop: 20,
     },
@@ -158,5 +161,6 @@ const styles = StyleSheet.create({
     optionText: {
         color: 'white',
         fontWeight: '700',
+        fontFamily: FONT_REGULAR,
     },
 });

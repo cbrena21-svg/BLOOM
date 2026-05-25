@@ -1,82 +1,73 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, db } from './firebaseConfig';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
+import { db, auth } from './firebaseConfig';
 
-const TRACKING_LOCAL_KEY = '@bloom_tracking_daily';
-
-const getDateKey = (date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
-const saveTrackingLocally = async (uid, dateKey, payload) => {
-    const storageKey = `${TRACKING_LOCAL_KEY}_${uid}`;
-    const raw = await AsyncStorage.getItem(storageKey);
-
-    let parsed = {};
-    if (raw) {
-        try {
-            parsed = JSON.parse(raw);
-        } catch (error) {
-            parsed = {};
-        }
-    }
-
-    const nextValue = {
-        ...parsed,
-        [dateKey]: {
-            ...payload,
-            _savedOffline: true,
-            _savedAt: new Date().toISOString(),
-        },
-    };
-
-    await AsyncStorage.setItem(storageKey, JSON.stringify(nextValue));
-};
-
-export const guardarTrackingDiario = async (payload) => {
+/**
+ * Guarda o actualiza el registro diario de síntomas de la usuaria activa.
+ * Usa la fecha local actual (AAAA-MM-DD) como ID único del documento.
+ * * @param {Object} datosTracking Objeto con los síntomas, estados de ánimo, etc.
+ */
+export const guardarTrackingDiario = async (datosTracking) => {
     try {
-        const user = auth.currentUser;
-        if (!user?.uid) {
-            return { success: false, error: 'No hay usuario autenticado' };
+        const usuarioActivo = auth.currentUser;
+        if (!usuarioActivo) {
+            console.error("No se pudo guardar el tracking: No hay sesión activa.");
+            return { success: false, error: "Usuario no autenticado." };
         }
 
-        const uid = user.uid;
-        const dateKey = getDateKey();
+        // Obtener la fecha de hoy local en formato limpio AAAA-MM-DD
+        const hoy = new Date();
+        const anio = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const fechaID = `${anio}-${mes}-${dia}`;
 
-        const trackingDocRef = doc(db, 'users', uid, 'tracking_diario', dateKey);
+        // Referencia exacta: users / [uid] / daily_logs / [fecha]
+        const logRef = doc(db, 'users', usuarioActivo.uid, 'daily_logs', fechaID);
 
-        await setDoc(
-            trackingDocRef,
-            {
-                ...payload,
-                fecha_registro: dateKey,
-                created_at: serverTimestamp(),
-            },
-            { merge: true },
-        );
+        // Guardamos los datos fusionando por si ya registró algo antes en el mismo día
+        // Nota: Agregué { merge: true } para que realmente fusione los datos y no sobrescriba lo anterior
+        await setDoc(logRef, {
+            ...datosTracking,
+            ultima_actualizacion: hoy.toISOString(),
+        }, { merge: true });
 
+        console.log(`[Firebase] Tracking diario guardado con éxito para: ${fechaID}`);
         return { success: true };
     } catch (error) {
-        try {
-            const uid = auth.currentUser?.uid;
-            if (uid) {
-                await saveTrackingLocally(uid, getDateKey(), payload);
-                return {
-                    success: true,
-                    offline: true,
-                    error: error?.message || 'Guardado en modo local',
-                };
-            }
-        } catch (localError) {
-            return {
-                success: false,
-                error: localError?.message || 'No se pudo guardar localmente',
-            };
-        }
+        console.error("Error crítico en guardarTrackingDiario:", error);
+        return { success: false, error: error.message };
+    }
+};
 
-        return { success: false, error: error?.message || 'No se pudo guardar tracking' };
+/**
+ * Trae los logs de todo un mes para pintarlos en el calendario
+ * @param {string} mesAnoStr - Formato 'YYYY-MM'
+ */
+export const obtenerTrackingMensual = async (mesAnoStr) => {
+    try {
+        const usuarioActivo = auth.currentUser;
+        if (!usuarioActivo) return { success: false, data: {} };
+
+        const logsRef = collection(db, 'users', usuarioActivo.uid, 'daily_logs');
+
+        // Buscamos los documentos de ese mes específico comparando el ID del documento (la fecha)
+        const q = query(
+            logsRef,
+            where(documentId(), '>=', `${mesAnoStr}-01`),
+            where(documentId(), '<=', `${mesAnoStr}-31`)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const datosMes = {};
+
+        querySnapshot.forEach((documento) => {
+            // Guardamos usando la fecha como clave: datosMes['2026-05-25']
+            datosMes[documento.id] = documento.data();
+        });
+
+        return { success: true, data: datosMes };
+    } catch (error) {
+        console.error("Error obteniendo el tracking mensual:", error);
+        return { success: false, error: error.message, data: {} };
     }
 };

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import CycleCircle from '../../components/Cycle/CycleCircle';
 import MoonPhase from '../../components/Cycle/MoonPhase';
 import EnergyBar from '../../components/Cycle/EnergyBar';
@@ -9,34 +10,122 @@ import { useCyclePhase } from '../../hooks/useCyclePhase';
 import { Colors } from '../../styles/colors';
 import { FONT_BOLD, FONT_REGULAR } from '../../styles/typography';
 import { logout } from '../../services/authService';
-import { getLastPeriodDate, getCycleLength } from '../../services/storageService';
 import { getCurrentCycleDay } from '../../utils/cycleCalculator';
-import { auth } from '../../services/firebaseConfig';
+import { auth, db } from '../../services/firebaseConfig';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function HomeScreen() {
     const [day, setDay] = useState(1);
     const [cycleLength, setCycleLength] = useState(28);
+    const [userProfile, setUserProfile] = useState(null);
+
+    const parseDate = (value) => {
+        if (!value) return null;
+        if (typeof value.toDate === 'function') return value.toDate();
+        if (value.seconds) return new Date(value.seconds * 1000);
+
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const getBaseLastPeriodDate = (profile) => {
+        if (!profile) return null;
+
+        const history = Array.isArray(profile.periods_history) ? profile.periods_history : [];
+        if (history.length > 0) {
+            const lastHistoryItem = history[history.length - 1];
+            return parseDate(lastHistoryItem?.startDate);
+        }
+
+        return parseDate(profile.inp_lmp_date || profile.lastPeriodDate);
+    };
+
+    const recalculateCycleDay = useCallback((profile) => {
+        const baseDate = getBaseLastPeriodDate(profile);
+        const length = Number(profile?.avg_cycle_length || profile?.inp_cycle_length || 28) || 28;
+
+        setCycleLength(length);
+
+        if (!baseDate) {
+            setDay(1);
+            return;
+        }
+
+        setDay(getCurrentCycleDay(baseDate, length));
+    }, []);
 
     useEffect(() => {
-        const loadCycleData = async () => {
-            try {
-                const userId = auth.currentUser?.uid;
-                const lastPeriodResult = await getLastPeriodDate(userId);
-                const cycleResult = await getCycleLength(userId);
+        let unsubscribeProfile = null;
 
-                if (lastPeriodResult.success && lastPeriodResult.data) {
-                    const length = cycleResult.data || 28;
-                    setCycleLength(length);
-                    const currentDay = getCurrentCycleDay(lastPeriodResult.data, length);
-                    setDay(currentDay);
-                }
-            } catch (error) {
-                console.error('Error loading cycle data:', error);
+        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+            if (unsubscribeProfile) {
+                unsubscribeProfile();
+                unsubscribeProfile = null;
             }
+
+            if (!user?.uid) {
+                setUserProfile(null);
+                setDay(1);
+                return;
+            }
+
+            const userDocRef = doc(db, 'users', user.uid);
+
+            unsubscribeProfile = onSnapshot(userDocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const profileData = snapshot.data();
+                    setUserProfile(profileData);
+                    recalculateCycleDay(profileData);
+                } else {
+                    setUserProfile(null);
+                    setDay(1);
+                }
+            });
+        });
+
+        return () => {
+            if (unsubscribeProfile) {
+                unsubscribeProfile();
+            }
+            unsubscribeAuth();
+        };
+    }, [recalculateCycleDay]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (userProfile) {
+                recalculateCycleDay(userProfile);
+            }
+        }, [userProfile, recalculateCycleDay])
+    );
+
+    useEffect(() => {
+        if (!userProfile) return undefined;
+
+        const updateCurrentDay = () => {
+            recalculateCycleDay(userProfile);
         };
 
-        loadCycleData();
-    }, []);
+        updateCurrentDay();
+
+        const scheduleNextUpdate = () => {
+            const now = new Date();
+            const nextMidnight = new Date(now);
+            nextMidnight.setHours(24, 0, 0, 0);
+
+            const timeoutId = setTimeout(() => {
+                updateCurrentDay();
+                scheduleNextUpdate();
+            }, nextMidnight.getTime() - now.getTime());
+
+            return timeoutId;
+        };
+
+        const timeoutId = scheduleNextUpdate();
+
+        return () => clearTimeout(timeoutId);
+    }, [userProfile, cycleLength, recalculateCycleDay]);
 
     // Obtenemos la fase actual mediante el Hook
     const phaseData = useCyclePhase(day);

@@ -6,7 +6,7 @@ export const useCyclePhase = (day) => {
     }
 
     if (day >= 6 && day <= 13) {
-        return phases.folicular;
+        return phases.follicular;
     }
 
     if (day >= 14 && day <= 16) {

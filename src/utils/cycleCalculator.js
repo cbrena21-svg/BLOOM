@@ -10,5 +10,8 @@ export const getCurrentCycleDay = (
     diffTime / (1000 * 60 * 60 * 24)
     );
 
-    return (diffDays % cycleLength) + 1;
+    const currentDay = diffDays + 1;
+    if (currentDay < 1) return 1;
+
+    return Math.min(currentDay, cycleLength);
 };

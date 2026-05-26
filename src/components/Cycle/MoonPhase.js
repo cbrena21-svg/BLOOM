@@ -1,49 +1,39 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 
-export default function MoonPhase({ phase }) {
+export default function MoonPhase({ phase, mirror = false, invertSilhouette = false, debug = false }) {
     const transition = useRef(new Animated.Value(1)).current;
-    const [displayPhase, setDisplayPhase] = useState(phase || 'full');
-    const [previousPhase, setPreviousPhase] = useState(phase || 'full');
+    
+    // Si no recibe nada, por defecto mostrará la luna llena
+    const [displayPhase, setDisplayPhase] = useState(phase || 'ovulatory');
+    const [previousPhase, setPreviousPhase] = useState(phase || 'ovulatory');
 
+    // Mapeo inteligente: Conecta el estado del ciclo con la sombra lunar correspondiente
     const phaseMap = {
-        new_moon: {
-            shadowStyle: styles.shadowFull,
-        },
-        crescent: {
-            shadowStyle: styles.shadowCrescentWaxing,
-        },
-        half: {
-            shadowStyle: styles.shadowQuarterWaxing,
-        },
-        quarter: {
-            shadowStyle: styles.shadowQuarterWaxing,
-        },
-        waxing: {
-            shadowStyle: styles.shadowWaxingGibbous,
-        },
-        full: {
-            shadowStyle: styles.shadowNone,
-        },
-        waning: {
-            shadowStyle: styles.shadowWaningGibbous,
-        },
-        waxing_crescent: {
-            shadowStyle: styles.shadowCrescentWaxing,
-        },
-        waning_crescent: {
-            shadowStyle: styles.shadowCrescentWaning,
-        },
-        waxing_gibbous: {
-            shadowStyle: styles.shadowWaxingGibbous,
-        },
-        waning_gibbous: {
-            shadowStyle: styles.shadowWaningGibbous,
-        },
+        // --- FASES DEL CICLO MENSTRUAL MODIFICADAS ---
+        menstrual: { shadowStyle: styles.shadowQuarterWaning },      // UPDATED: Media-luna que cierra hacia la derecha (iluminada a la derecha)
+        follicular: { shadowStyle: styles.shadowWaxingGibbous },     // UPDATED: Giba Creciente (Más iluminada que Menstrual)
+        ovulatory: { shadowStyle: styles.shadowNone },               // Luna Llena (Iluminada)
+        luteal: { shadowStyle: styles.shadowCrescentWaning },        // Luna Menguante Delgado - Izq lit, derecha shadow
+
+        // --- RESPALDOS DE FASES LUNARES ESTÁNDAR ---
+        new_moon: { shadowStyle: styles.shadowFull },
+        crescent: { shadowStyle: styles.shadowCrescentWaxing },
+        half: { shadowStyle: styles.shadowQuarterWaxing },
+        quarter: { shadowStyle: styles.shadowQuarterWaxing },
+        waxing: { shadowStyle: styles.shadowWaxingGibbous },
+        full: { shadowStyle: styles.shadowNone },
+        waning: { shadowStyle: styles.shadowWaningGibbous },
+        waxing_crescent: { shadowStyle: styles.shadowCrescentWaxing },
+        waning_crescent: { shadowStyle: styles.shadowCrescentWaning },
+        waxing_gibbous: { shadowStyle: styles.shadowWaxingGibbous },
+        waning_gibbous: { shadowStyle: styles.shadowWaningGibbous },
+        quarter_waning: { shadowStyle: styles.shadowQuarterWaning },
     };
 
     useEffect(() => {
-        const nextPhase = phase || 'full';
+        // Asegurarnos de que nextPhase tenga un valor válido
+        const nextPhase = phase ? phase.toLowerCase() : 'ovulatory';
 
         if (nextPhase === displayPhase) {
             return;
@@ -54,10 +44,11 @@ export default function MoonPhase({ phase }) {
         setDisplayPhase(nextPhase);
         transition.setValue(0);
 
+        // --- ANIMACIÓN MÁS SUAVE ---
         Animated.timing(transition, {
             toValue: 1,
-            duration: 520,
-            easing: Easing.inOut(Easing.cubic),
+            duration: 1200, // Aumentado de 520ms a 1200ms para una transición más smooth
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Curva suave (inicia rápido, termina muy suave)
             useNativeDriver: true,
         }).start(({ finished }) => {
             if (finished) {
@@ -66,17 +57,19 @@ export default function MoonPhase({ phase }) {
         });
     }, [phase, displayPhase, transition]);
 
-    const renderedCurrentPhase = phaseMap[displayPhase] || phaseMap.full;
-    const renderedPreviousPhase = phaseMap[previousPhase] || phaseMap.full;
+    const renderedCurrentPhase = phaseMap[displayPhase] || phaseMap.ovulatory;
+    const renderedPreviousPhase = phaseMap[previousPhase] || phaseMap.ovulatory;
 
     const currentOpacity = transition;
     const previousOpacity = transition.interpolate({
         inputRange: [0, 1],
         outputRange: [1, 0],
     });
+    
+    // Latido sutil al cambiar de fase
     const moonScale = transition.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.985, 1],
+        inputRange: [0, 0.5, 1],
+        outputRange: [1, 0.98, 1], // Se contrae levemente a la mitad de la animación
     });
 
     const craters = [
@@ -96,7 +89,7 @@ export default function MoonPhase({ phase }) {
                     style={[
                         styles.shadowLayer,
                         renderedPreviousPhase.shadowStyle,
-                        { opacity: previousOpacity },
+                        { opacity: previousOpacity, transform: [{ scaleX: (mirror !== invertSilhouette) ? -1 : 1 }], ...(debug ? { borderWidth: 2, borderColor: 'magenta' } : {}) },
                     ]}
                 />
                 <Animated.View
@@ -104,7 +97,7 @@ export default function MoonPhase({ phase }) {
                     style={[
                         styles.shadowLayer,
                         renderedCurrentPhase.shadowStyle,
-                        { opacity: currentOpacity },
+                        { opacity: currentOpacity, transform: [{ scaleX: (mirror !== invertSilhouette) ? -1 : 1 }], ...(debug ? { borderWidth: 2, borderColor: 'magenta' } : {}) },
                     ]}
                 />
 
@@ -126,7 +119,7 @@ const styles = StyleSheet.create({
     moonBody: {
         width: 180,
         height: 180,
-        borderRadius: 90,
+        borderRadius: 100,
         backgroundColor: '#D8D3C8',
         overflow: 'hidden',
         shadowColor: '#000',
@@ -137,10 +130,8 @@ const styles = StyleSheet.create({
     },
     shadowLayer: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        // Quitamos top, left, right, bottom de aquí para evitar conflictos
+        // Cada sombra individual dictará su propia posición
     },
     moonHighlight: {
         position: 'absolute',
@@ -169,47 +160,67 @@ const styles = StyleSheet.create({
         position: 'absolute',
         width: 180,
         height: 180,
+        top: 0,
+        left: 0,
         borderRadius: 90,
         backgroundColor: '#0D0D1E',
     },
     shadowCrescentWaxing: {
         position: 'absolute',
-        width: 130,
-        height: 180,
-        left: -4,
-        borderRadius: 90,
+        width: 150,
+        height: 150,
+        top: 15,
+        left: -10,
+        borderRadius: 75,
         backgroundColor: '#0D0D1E',
     },
+    // Folicular
     shadowQuarterWaxing: {
         position: 'absolute',
-        width: 92,
-        height: 180,
-        left: 0,
-        borderRadius: 90,
+        width: 160,
+        height: 160,
+        top: 10,
+        left: 55,
+        borderRadius: 100,
         backgroundColor: '#0D0D1E',
     },
+    // Menstrual
+    shadowQuarterWaning: {
+        position: 'absolute',
+        width: 160,
+        height: 160,
+        top: 10,
+        left: 40,
+        borderRadius: 100,
+        backgroundColor: '#0D0D1E',
+    },
+    // Follicular (Alternativa)
     shadowWaxingGibbous: {
         position: 'absolute',
-        width: 136,
-        height: 180,
-        left: -14,
-        borderRadius: 90,
+        width: 160,
+        height: 160,
+        top: 10,
+        left: -20,
+        borderRadius: 80,
         backgroundColor: '#0D0D1E',
     },
     shadowWaningGibbous: {
         position: 'absolute',
-        width: 136,
-        height: 180,
-        right: -14,
-        borderRadius: 90,
+        width: 160,
+        height: 160,
+        top: 10,
+        left: 40, // Cambiado de right a left
+        borderRadius: 80,
         backgroundColor: '#0D0D1E',
     },
+    // Lútea
     shadowCrescentWaning: {
         position: 'absolute',
-        width: 130,
-        height: 180,
-        right: -4,
-        borderRadius: 90,
+        width: 160,
+        height: 160,
+        top: 10,
+        left: -50,
+        borderRadius: 100,
         backgroundColor: '#0D0D1E',
     },
     crater: {

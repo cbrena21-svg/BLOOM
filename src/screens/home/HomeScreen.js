@@ -7,6 +7,7 @@ import MoonPhase from '../../components/Cycle/MoonPhase';
 import EnergyBar from '../../components/Cycle/EnergyBar';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { useCyclePhase } from '../../hooks/useCyclePhase';
+import { phases } from '../../data/phases';
 import { Colors } from '../../styles/colors';
 import { FONT_BOLD, FONT_REGULAR } from '../../styles/typography';
 import { logout } from '../../services/authService';
@@ -160,10 +161,12 @@ export default function HomeScreen() {
                     color={currentPhase.color}
                     day={day}
                     onDayChange={setDay}
+                    cycleLength={cycleLength}
                 />
 
                 <View style={styles.moonContainer}>
-                    <MoonPhase phase={currentPhase.moon} />
+                    {/* debug={true}*/}
+                    <MoonPhase phase={phaseData === phases.menstrual ? 'quarter_waning' : currentPhase.moon} />
                 </View>
             </View>
 

@@ -31,6 +31,6 @@ export const phases = {
         color: Colors.lutea,
         energy: 0.65,
         days: [17, 28],
-        moon: 'waxing',
+        moon: 'waning_crescent',
     },
 };

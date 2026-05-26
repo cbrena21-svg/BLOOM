@@ -485,6 +485,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         paddingBottom: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.18,
+        shadowRadius: 16,
+        elevation: 8,
     },
     navigationHeader: {
         flexDirection: 'row',

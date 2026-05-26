@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '../../styles/colors';
 import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
-import { guardarTrackingDiario } from '../../services/trackingService';
+import { guardarTrackingDiario, obtenerTrackingDiarioHoy } from '../../services/trackingService';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
 
 const flowColors = [
@@ -118,6 +119,60 @@ export default function TrackingScreen() {
 
     const [notas, setNotas] = useState('');
     const [cargando, setCargando] = useState(false);
+    const [mostrarResumen, setMostrarResumen] = useState(false);
+
+    useFocusEffect(
+        useCallback(() => {
+            const cargarDatosDeHoy = async () => {
+                try {
+                    setCargandoFirebase(true);
+                    const resultado = await obtenerTrackingDiarioHoy();
+
+                    if (resultado.success && resultado.data) {
+                        const data = resultado.data;
+
+                        // 1. Mapeamos de vuelta los síntomas físicos (IDs correspondientes)
+                        const symptomsArr = [];
+                        if (data.cuerpo_sintomas?.flag_symptom_pain) symptomsArr.push('colicos');
+                        if (data.cuerpo_sintomas?.flag_symptom_breast) symptomsArr.push('sensibilidad');
+                        if (data.cuerpo_sintomas?.flag_symptom_acne) symptomsArr.push('acne');
+                        if (data.cuerpo_sintomas?.inp_migraine_timing) symptomsArr.push('cabezadolor');
+                        if (data.cuerpo_sintomas?.flag_symptom_hotflashes) symptomsArr.push('sofocos');
+                        setSelectedSymptoms(symptomsArr);
+
+                        // 2. Mapeamos el resto de los estados de tu formulario
+                        setSelectedDigestion(data.cuerpo_sintomas?.digestion === 'none' ? null : data.cuerpo_sintomas?.digestion);
+                        setSelectedEnergy(data.energia_mente?.bateria_energia === 'none' ? null : data.energia_mente?.bateria_energia);
+                        setSelectedMood(data.energia_mente?.animo === 'none' ? null : data.energia_mente?.animo);
+                        setSelectedStress(data.energia_mente?.flag_stress_level === 'none' ? null : data.energia_mente?.flag_stress_level);
+                        setSelectedSleep(data.energia_mente?.inp_sleep_quality === 'none' ? null : data.energia_mente?.inp_sleep_quality);
+                        setSelectedExercise(data.actividad_physica?.tipo_ejercicio === 'none' ? null : data.actividad_physica?.tipo_ejercicio);
+                        setExerciseMinutes(data.actividad_physica?.minutos || null);
+                        setSelectedFluid(data.sexualidad_fertilidad?.flujo_cervical === 'none' ? null : data.sexualidad_fertilidad?.flujo_cervical);
+                        setNotas(data.notas || '');
+
+                        // Datos del periodo
+                        setSelectedProduct(data.flujo_menstrual?.metodo_utilizado === 'none' ? null : data.flujo_menstrual?.metodo_utilizado);
+                        setCantidad(data.flujo_menstrual?.cantidad_registrada || 0);
+                        setSelectedColor(data.flujo_menstrual?.color === 'none' ? null : data.flujo_menstrual?.color);
+                        setHasClots(data.flujo_menstrual?.inp_clots ?? null);
+
+                        // Activamos la vista de "Cajita de resumen"
+                        setMostrarResumen(true);
+                    } else {
+                        // Si no hay datos guardados para hoy, aseguramos que se vea el formulario limpio
+                        setMostrarResumen(false);
+                    }
+                } catch (error) {
+                    console.error("Error al sincronizar datos de enfoque:", error);
+                } finally {
+                    setCargandoFirebase(false);
+                }
+            };
+
+            cargarDatosDeHoy();
+        }, [])
+    );
 
     useEffect(() => {
         const verificarPeriodoActivo = async () => {
@@ -262,6 +317,7 @@ export default function TrackingScreen() {
 
         if (resultado.success) {
             Alert.alert("¡Guardado!", "Tus datos del día han sido sincronizados.");
+            setMostrarResumen(true);
         } else {
             Alert.alert("Error", "Problema al conectar con la base de datos.");
         }
@@ -275,295 +331,325 @@ export default function TrackingScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={styles.title}>Tracking Diario</Text>
+            {mostrarResumen ? (
+                /* =========================================================
+                   VISTA DE LA CAJITA (RESUMEN DE SÍNTOMAS)
+                   ========================================================= */
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <Text style={styles.title}>Tracking Diario</Text>
 
-                {/* --- SECCIÓN 1: REGISTRO DE SANGRADO --- */}
-                <View style={[styles.moduleContainer, !isPeriodActive && styles.moduleLocked]}>
-                    <View style={styles.titleHeaderRow}>
-                        <Text style={styles.sectionTitle}>Registro de Sangrado</Text>
-                        <TouchableOpacity style={styles.infoIconCircle} onPress={() => setShowInfo(!showInfo)}>
-                            <Text style={styles.infoIconText}>i</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <View style={[styles.moduleContainer, { padding: 20, alignItems: 'center' }]}>
+                        <Text style={[styles.sectionTitle, { marginBottom: 15 }]}>
+                            ✨ Síntomas Registrados Hoy
+                        </Text>
 
-                    {showInfo && (
-                        <View style={styles.tooltipBox}>
-                            <Text style={styles.tooltipText}>
-                                Indica la cantidad de productos sanitarios llenados hoy para calcular con precisión tus mililitros (ml) perdidos.
+                        <Text style={{ color: '#aaa', textAlign: 'center', marginBottom: 25, fontSize: 16 }}>
+                            Ya guardaste tu registro de hoy. Puedes ver tus respuestas en tu calendario o editarlas aquí mismo.
+                        </Text>
+
+                        {/* Botón para regresar al formulario con todo lo contestado */}
+                        <TouchableOpacity
+                            style={[styles.productPill, { backgroundColor: '#C81D25', paddingHorizontal: 40, paddingVertical: 12 }]}
+                            onPress={() => setMostrarResumen(false)}
+                        >
+                            <Text style={[styles.productPillText, { color: '#fff', fontWeight: 'bold' }]}>
+                                Editar Registro
                             </Text>
-                        </View>
-                    )}
-
-                    <Text style={styles.labelSub}>¿Qué producto utilizaste hoy?</Text>
-                    <View style={styles.row}>
-                        <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, selectedProduct === 'regular' && styles.productPillSelected]} onPress={() => handleProductChange('regular')}>
-                            <Text style={styles.productPillText}>Toallas / Tampones Regulares</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, selectedProduct === 'nocturna' && styles.productPillSelected]} onPress={() => handleProductChange('nocturna')}>
-                            <Text style={styles.productPillText}>Nocturnas / Extra Absorción</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, selectedProduct === 'copa' && styles.productPillSelected]} onPress={() => handleProductChange('copa')}>
-                            <Text style={styles.productPillText}>Copa Menstrual</Text>
                         </TouchableOpacity>
                     </View>
+                </ScrollView>
+            ) : (
+                /* =========================================================
+                   VISTA DEL FORMULARIO ORIGINAL
+                   ========================================================= */
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <Text style={styles.title}>Tracking Diario</Text>
 
-                    {selectedProduct && (
-                        <View style={styles.counterSection}>
-                            <Text style={styles.labelSub}>Cantidad totalmente llenada hoy:</Text>
-                            <View style={styles.counterRow}>
-                                <Text style={styles.counterUnitText}>{selectedProduct === 'copa' ? `${cantidad} ml` : `${cantidad} piezas`}</Text>
-                                <View style={styles.counterControls}>
-                                    <TouchableOpacity disabled={!isPeriodActive} style={styles.counterBtn} onPress={() => handleCounter('sub')}>
-                                        <Text style={styles.counterBtnText}>-</Text>
+                    {/* --- SECCIÓN 1: REGISTRO DE SANGRADO --- */}
+                    <View style={[styles.moduleContainer, !isPeriodActive && styles.moduleLocked]}>
+                        <View style={styles.titleHeaderRow}>
+                            <Text style={styles.sectionTitle}>Registro de Sangrado</Text>
+                            <TouchableOpacity style={styles.infoIconCircle} onPress={() => setShowInfo(!showInfo)}>
+                                <Text style={styles.infoIconText}>i</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {showInfo && (
+                            <View style={styles.tooltipBox}>
+                                <Text style={styles.tooltipText}>
+                                    Indica la cantidad de productos sanitarios llenados hoy para calcular con precisión tus mililitros (ml) perdidos.
+                                </Text>
+                            </View>
+                        )}
+
+                        <Text style={styles.labelSub}>¿Qué producto utilizaste hoy?</Text>
+                        <View style={styles.row}>
+                            <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, selectedProduct === 'regular' && styles.productPillSelected]} onPress={() => handleProductChange('regular')}>
+                                <Text style={styles.productPillText}>Toallas / Tampones Regulares</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, selectedProduct === 'nocturna' && styles.productPillSelected]} onPress={() => handleProductChange('nocturna')}>
+                                <Text style={styles.productPillText}>Nocturnas / Extra Absorción</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, selectedProduct === 'copa' && styles.productPillSelected]} onPress={() => handleProductChange('copa')}>
+                                <Text style={styles.productPillText}>Copa Menstrual</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedProduct && (
+                            <View style={styles.counterSection}>
+                                <Text style={styles.labelSub}>Cantidad totalmente llenada hoy:</Text>
+                                <View style={styles.counterRow}>
+                                    <Text style={styles.counterUnitText}>{selectedProduct === 'copa' ? `${cantidad} ml` : `${cantidad} piezas`}</Text>
+                                    <View style={styles.counterControls}>
+                                        <TouchableOpacity disabled={!isPeriodActive} style={styles.counterBtn} onPress={() => handleCounter('sub')}>
+                                            <Text style={styles.counterBtnText}>-</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity disabled={!isPeriodActive} style={styles.counterBtn} onPress={() => handleCounter('add')}>
+                                            <Text style={styles.counterBtnText}>+</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        {cantidad > 0 && (
+                            <View style={styles.conditionalSection}>
+                                <Text style={styles.labelSubMargin}>Color predominante:</Text>
+                                <View style={styles.colorRow}>
+                                    {flowColors.map(item => (
+                                        <TouchableOpacity disabled={!isPeriodActive} key={item.flag} style={styles.colorItemContainer} onPress={() => setSelectedColor(item.flag)}>
+                                            <View style={[styles.colorCircle, { backgroundColor: item.hex }, selectedColor === item.flag && styles.colorCircleSelected]} />
+                                            <Text style={styles.colorCircleLabel}>{item.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Text style={styles.labelSubMargin}>¿Identificaste presencia de coágulos?</Text>
+                                <View style={styles.clotsRow}>
+                                    <TouchableOpacity disabled={!isPeriodActive} style={[styles.clotButton, hasClots === false && styles.clotButtonNoSelected]} onPress={() => setHasClots(false)}>
+                                        <Text style={styles.clotButtonText}>No</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity disabled={!isPeriodActive} style={styles.counterBtn} onPress={() => handleCounter('add')}>
-                                        <Text style={styles.counterBtnText}>+</Text>
+                                    <TouchableOpacity disabled={!isPeriodActive} style={[styles.clotButton, hasClots === true && styles.clotButtonYesSelected]} onPress={() => setHasClots(true)}>
+                                        <Text style={styles.clotButtonText}>Sí</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                        </View>
-                    )}
+                        )}
+                    </View>
 
-                    {cantidad > 0 && (
-                        <View style={styles.conditionalSection}>
-                            <Text style={styles.labelSubMargin}>Color predominante:</Text>
-                            <View style={styles.colorRow}>
-                                {flowColors.map(item => (
-                                    <TouchableOpacity disabled={!isPeriodActive} key={item.flag} style={styles.colorItemContainer} onPress={() => setSelectedColor(item.flag)}>
-                                        <View style={[styles.colorCircle, { backgroundColor: item.hex }, selectedColor === item.flag && styles.colorCircleSelected]} />
-                                        <Text style={styles.colorCircleLabel}>{item.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                    {/* --- SECCIÓN 2: CUERPO Y SÍNTOMAS --- */}
+                    <View style={[styles.moduleContainer, { marginTop: 15 }]}>
+                        <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsSymptomsOpen(!isSymptomsOpen)} activeOpacity={0.7}>
+                            <Text style={styles.sectionTitle}>Cuerpo y Síntomas</Text>
+                            <Text style={styles.arrowIcon}>{isSymptomsOpen ? '▲' : '▼'}</Text>
+                        </TouchableOpacity>
 
-                            <Text style={styles.labelSubMargin}>¿Identificaste presencia de coágulos?</Text>
-                            <View style={styles.clotsRow}>
-                                <TouchableOpacity disabled={!isPeriodActive} style={[styles.clotButton, hasClots === false && styles.clotButtonNoSelected]} onPress={() => setHasClots(false)}>
-                                    <Text style={styles.clotButtonText}>No</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity disabled={!isPeriodActive} style={[styles.clotButton, hasClots === true && styles.clotButtonYesSelected]} onPress={() => setHasClots(true)}>
-                                    <Text style={styles.clotButtonText}>Sí</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
-                </View>
-
-                {/* --- SECCIÓN 2: CUERPO Y SÍNTOMAS --- */}
-                <View style={[styles.moduleContainer, { marginTop: 15 }]}>
-                    <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsSymptomsOpen(!isSymptomsOpen)} activeOpacity={0.7}>
-                        <Text style={styles.sectionTitle}>Cuerpo y Síntomas</Text>
-                        <Text style={styles.arrowIcon}>{isSymptomsOpen ? '▲' : '▼'}</Text>
-                    </TouchableOpacity>
-
-                    {isSymptomsOpen && (
-                        <View style={styles.collapsibleContent}>
-                            <Text style={styles.labelSub}>Síntomas Físicos:</Text>
-                            <View style={styles.row}>
-                                {symptomsList.map(symptom => (
-                                    <TouchableOpacity key={symptom.id} style={[styles.productPill, selectedSymptoms.includes(symptom.id) && styles.symptomPillSelected]} onPress={() => toggleSymptom(symptom.id)}>
-                                        <Text style={styles.productPillText}>{symptom.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={styles.labelSubMargin}>Estado de tu digestión:</Text>
-                            <View style={styles.row}>
-                                {digestionOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedDigestion === option.id && styles.digestionPillSelected]} onPress={() => setSelectedDigestion(option.id)}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-                    )}
-                </View>
-
-                {/* --- SECCIÓN 3: ENERGÍA Y MENTE --- */}
-                <View style={[styles.moduleContainer, { marginTop: 15 }]}>
-                    <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsMindOpen(!isMindOpen)} activeOpacity={0.7}>
-                        <Text style={styles.sectionTitle}>Energía y Mente</Text>
-                        <Text style={styles.arrowIcon}>{isMindOpen ? '▲' : '▼'}</Text>
-                    </TouchableOpacity>
-
-                    {isMindOpen && (
-                        <View style={styles.collapsibleContent}>
-                            <Text style={styles.labelSub}>Nivel de Energía (Batería):</Text>
-                            <View style={styles.row}>
-                                {energyOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedEnergy === option.id && styles.energyPillSelected]} onPress={() => setSelectedEnergy(option.id)}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={styles.labelSubMargin}>Estado de Ánimo:</Text>
-                            <View style={styles.row}>
-                                {moodOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedMood === option.id && styles.moodPillSelected]} onPress={() => setSelectedMood(option.id)}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={styles.labelSubMargin}>Nivel de Estrés:</Text>
-                            <View style={styles.row}>
-                                {stressOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedStress === option.id && styles.stressPillSelected]} onPress={() => setSelectedStress(option.id)}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={styles.labelSubMargin}>Calidad del Sueño:</Text>
-                            <View style={styles.row}>
-                                {sleepOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedSleep === option.id && styles.sleepPillSelected]} onPress={() => setSelectedSleep(option.id)}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={styles.labelSubMargin}>Ejercicio Físico:</Text>
-                            <View style={styles.row}>
-                                {exerciseOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedExercise === option.id && styles.exercisePillSelected]} onPress={() => {
-                                        setSelectedExercise(option.id);
-                                        if (option.id === 'ninguno') setExerciseMinutes(null);
-                                    }}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {selectedExercise && selectedExercise !== 'ninguno' && (
-                                <View style={styles.timeInputContainer}>
-                                    <Text style={styles.labelSubMargin}>Duración aproximada:</Text>
-                                    <View style={styles.row}>
-                                        {timeOptions.map(time => (
-                                            <TouchableOpacity
-                                                key={time}
-                                                style={[
-                                                    styles.timePill,
-                                                    exerciseMinutes === time && styles.timePillSelected
-                                                ]}
-                                                onPress={() => setExerciseMinutes(time)}
-                                            >
-                                                <Text style={styles.timePillText}>{time} min</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
+                        {isSymptomsOpen && (
+                            <View style={styles.collapsibleContent}>
+                                <Text style={styles.labelSub}>Síntomas Físicos:</Text>
+                                <View style={styles.row}>
+                                    {symptomsList.map(symptom => (
+                                        <TouchableOpacity key={symptom.id} style={[styles.productPill, selectedSymptoms.includes(symptom.id) && styles.symptomPillSelected]} onPress={() => toggleSymptom(symptom.id)}>
+                                            <Text style={styles.productPillText}>{symptom.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
-                            )}
-                        </View>
-                    )}
-                </View>
 
-                {/* --- SECCIÓN 4: SEXUALIDAD Y FERTILIDAD --- */}
-                <View style={[styles.moduleContainer, { marginTop: 15 }]}>
-                    <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsSexOpen(!isSexOpen)} activeOpacity={0.7}>
-                        <Text style={styles.sectionTitle}>Sexualidad y Fertilidad</Text>
-                        <Text style={styles.arrowIcon}>{isSexOpen ? '▲' : '▼'}</Text>
-                    </TouchableOpacity>
-
-                    {isSexOpen && (
-                        <View style={styles.collapsibleContent}>
-                            <Text style={styles.labelSub}>Flujo Cervical:</Text>
-                            <View style={styles.row}>
-                                {cervicalFluidOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedFluid === option.id && styles.fluidPillSelected]} onPress={() => setSelectedFluid(option.id)}>
-                                        <Text style={styles.productPillText}>{option.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Text style={styles.labelSubMargin}>Relaciones sexuales:</Text>
-                            <View style={styles.row}>
-                                <TouchableOpacity style={[styles.productPill, sexPresent === 'si' && (isHormonal ? styles.sexNeutralSelected : styles.sexPillGenericSelected)]} onPress={() => { setSexPresent('si'); setProtectionType(null); setSelectedProtection(null); }}>
-                                    <Text style={styles.productPillText}>Sí</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.productPill, sexPresent === 'no' && styles.digestionPillSelected]} onPress={() => { setSexPresent('no'); setProtectionType(null); setSelectedProtection(null); }}>
-                                    <Text style={styles.productPillText}>No</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* FLUJO PERFIL NATURAL */}
-                            {!isHormonal && sexPresent === 'si' && (
-                                <View style={{ marginTop: 10 }}>
-                                    <Text style={styles.labelSubMargin}>Protección utilizada:</Text>
-                                    <View style={styles.row}>
-                                        <TouchableOpacity style={[styles.productPill, protectionType === 'con_proteccion' && styles.sexSafeSelected]} onPress={() => { setProtectionType('con_proteccion'); setSelectedProtection(null); }}>
-                                            <Text style={styles.productPillText}>Con protección</Text>
+                                <Text style={styles.labelSubMargin}>Estado de tu digestión:</Text>
+                                <View style={styles.row}>
+                                    {digestionOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedDigestion === option.id && styles.digestionPillSelected]} onPress={() => setSelectedDigestion(option.id)}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.productPill, protectionType === 'sin_proteccion' && styles.sexUnsafeSelected]} onPress={() => { setProtectionType('sin_proteccion'); setSelectedProtection(null); }}>
-                                            <Text style={styles.productPillText}>Sin protección</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                    </View>
 
-                                    {protectionType === 'con_proteccion' && (
-                                        <View style={{ marginTop: 10 }}>
-                                            <Text style={styles.labelSubMargin}>Método de barrera o natural:</Text>
-                                            <View style={styles.row}>
-                                                {metodosBarreraNatural.map(metodo => (
-                                                    <TouchableOpacity key={metodo} style={[styles.productPill, selectedProtection === metodo && styles.protectionSelected]} onPress={() => setSelectedProtection(metodo)}>
-                                                        <Text style={styles.productPillText}>{metodo}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
+                    {/* --- SECCIÓN 3: ENERGÍA Y MENTE --- */}
+                    <View style={[styles.moduleContainer, { marginTop: 15 }]}>
+                        <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsMindOpen(!isMindOpen)} activeOpacity={0.7}>
+                            <Text style={styles.sectionTitle}>Energía y Mente</Text>
+                            <Text style={styles.arrowIcon}>{isMindOpen ? '▲' : '▼'}</Text>
+                        </TouchableOpacity>
+
+                        {isMindOpen && (
+                            <View style={styles.collapsibleContent}>
+                                <Text style={styles.labelSub}>Nivel de Energía (Batería):</Text>
+                                <View style={styles.row}>
+                                    {energyOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedEnergy === option.id && styles.energyPillSelected]} onPress={() => setSelectedEnergy(option.id)}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Text style={styles.labelSubMargin}>Estado de Ánimo:</Text>
+                                <View style={styles.row}>
+                                    {moodOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedMood === option.id && styles.moodPillSelected]} onPress={() => setSelectedMood(option.id)}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Text style={styles.labelSubMargin}>Nivel de Estrés:</Text>
+                                <View style={styles.row}>
+                                    {stressOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedStress === option.id && styles.stressPillSelected]} onPress={() => setSelectedStress(option.id)}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Text style={styles.labelSubMargin}>Calidad del Sueño:</Text>
+                                <View style={styles.row}>
+                                    {sleepOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedSleep === option.id && styles.sleepPillSelected]} onPress={() => setSelectedSleep(option.id)}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Text style={styles.labelSubMargin}>Ejercicio Físico:</Text>
+                                <View style={styles.row}>
+                                    {exerciseOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedExercise === option.id && styles.exercisePillSelected]} onPress={() => {
+                                            setSelectedExercise(option.id);
+                                            if (option.id === 'ninguno') setExerciseMinutes(null);
+                                        }}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                {selectedExercise && selectedExercise !== 'ninguno' && (
+                                    <View style={styles.timeInputContainer}>
+                                        <Text style={styles.labelSubMargin}>Duración aproximada:</Text>
+                                        <View style={styles.row}>
+                                            {timeOptions.map(time => (
+                                                <TouchableOpacity
+                                                    key={time}
+                                                    style={[
+                                                        styles.timePill,
+                                                        exerciseMinutes === time && styles.timePillSelected
+                                                    ]}
+                                                    onPress={() => setExerciseMinutes(time)}
+                                                >
+                                                    <Text style={styles.timePillText}>{time} min</Text>
+                                                </TouchableOpacity>
+                                            ))}
                                         </View>
-                                    )}
-                                </View>
-                            )}
-
-                            {/* FLUJO PERFIL ARTIFICIAL / HORMONAL */}
-                            {isHormonal && (
-                                <View style={{ marginTop: 10 }}>
-                                    <Text style={styles.labelSubMargin}>¿Verificaste tu método hoy? ({userContraceptive})</Text>
-                                    <View style={styles.row}>
-                                        <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'si' && styles.verificationSuccessSelected]} onPress={() => setContraceptiveVerified('si')}>
-                                            <Text style={styles.productPillText}>Sí</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'no' && styles.sexUnsafeSelected]} onPress={() => setContraceptiveVerified('no')}>
-                                            <Text style={styles.productPillText}>No</Text>
-                                        </TouchableOpacity>
                                     </View>
+                                )}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* --- SECCIÓN 4: SEXUALIDAD Y FERTILIDAD --- */}
+                    <View style={[styles.moduleContainer, { marginTop: 15 }]}>
+                        <TouchableOpacity style={styles.collapsibleHeader} onPress={() => setIsSexOpen(!isSexOpen)} activeOpacity={0.7}>
+                            <Text style={styles.sectionTitle}>Sexualidad y Fertilidad</Text>
+                            <Text style={styles.arrowIcon}>{isSexOpen ? '▲' : '▼'}</Text>
+                        </TouchableOpacity>
+
+                        {isSexOpen && (
+                            <View style={styles.collapsibleContent}>
+                                <Text style={styles.labelSub}>Flujo Cervical:</Text>
+                                <View style={styles.row}>
+                                    {cervicalFluidOptions.map(option => (
+                                        <TouchableOpacity key={option.id} style={[styles.productPill, selectedFluid === option.id && styles.fluidPillSelected]} onPress={() => setSelectedFluid(option.id)}>
+                                            <Text style={styles.productPillText}>{option.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
-                            )}
-                        </View>
-                    )}
-                </View>
 
-                {/* --- SECCIÓN 5: NOTAS --- */}
-                <View style={[styles.moduleContainer, { marginTop: 15, marginBottom: 20 }]}>
-                    <Text style={styles.sectionTitle}>Notas del día</Text>
-                    <Text style={styles.labelSub}>
-                        Espacio libre para registrar cómo te sientes, antojos o cualquier detalle importante.
-                    </Text>
-                    <TextInput
-                        style={styles.textInputStyle}
-                        multiline
-                        value={notas}
-                        onChangeText={setNotas}
-                        placeholder="Escribe algo sobre tu día..."
-                        placeholderTextColor="#666"
-                    />
-                </View>
+                                <Text style={styles.labelSubMargin}>Relaciones sexuales:</Text>
+                                <View style={styles.row}>
+                                    <TouchableOpacity style={[styles.productPill, sexPresent === 'si' && (isHormonal ? styles.sexNeutralSelected : styles.sexPillGenericSelected)]} onPress={() => { setSexPresent('si'); setProtectionType(null); setSelectedProtection(null); }}>
+                                        <Text style={styles.productPillText}>Sí</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.productPill, sexPresent === 'no' && styles.digestionPillSelected]} onPress={() => { setSexPresent('no'); setProtectionType(null); setSelectedProtection(null); }}>
+                                        <Text style={styles.productPillText}>No</Text>
+                                    </TouchableOpacity>
+                                </View>
 
-                {/* BOTÓN GUARDAR (Este ya lo tienes, va justo debajo) */}
+                                {/* FLUJO PERFIL NATURAL */}
+                                {!isHormonal && sexPresent === 'si' && (
+                                    <View style={{ marginTop: 10 }}>
+                                        <Text style={styles.labelSubMargin}>Protección utilizada:</Text>
+                                        <View style={styles.row}>
+                                            <TouchableOpacity style={[styles.productPill, protectionType === 'con_proteccion' && styles.sexSafeSelected]} onPress={() => { setProtectionType('con_proteccion'); setSelectedProtection(null); }}>
+                                                <Text style={styles.productPillText}>Con protección</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={[styles.productPill, protectionType === 'sin_proteccion' && styles.sexUnsafeSelected]} onPress={() => { setProtectionType('sin_proteccion'); setSelectedProtection(null); }}>
+                                                <Text style={styles.productPillText}>Sin protección</Text>
+                                            </TouchableOpacity>
+                                        </View>
 
-                {/* BOTÓN GUARDAR */}
-                <TouchableOpacity
-                    style={[styles.saveButton, cargando && { opacity: 0.6 }]}
-                    onPress={handleGuardarDatos}
-                    disabled={cargando}
-                >
-                    <Text style={styles.saveButtonText}>
-                        {cargando ? "Guardando..." : "Guardar Registro"}
-                    </Text>
-                </TouchableOpacity>
+                                        {protectionType === 'con_proteccion' && (
+                                            <View style={{ marginTop: 10 }}>
+                                                <Text style={styles.labelSubMargin}>Método de barrera o natural:</Text>
+                                                <View style={styles.row}>
+                                                    {metodosBarreraNatural.map(metodo => (
+                                                        <TouchableOpacity key={metodo} style={[styles.productPill, selectedProtection === metodo && styles.protectionSelected]} onPress={() => setSelectedProtection(metodo)}>
+                                                            <Text style={styles.productPillText}>{metodo}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
 
-            </ScrollView>
+                                {/* FLUJO PERFIL ARTIFICIAL / HORMONAL */}
+                                {isHormonal && (
+                                    <View style={{ marginTop: 10 }}>
+                                        <Text style={styles.labelSubMargin}>¿Verificaste tu método hoy? ({userContraceptive})</Text>
+                                        <View style={styles.row}>
+                                            <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'si' && styles.verificationSuccessSelected]} onPress={() => setContraceptiveVerified('si')}>
+                                                <Text style={styles.productPillText}>Sí</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'no' && styles.sexUnsafeSelected]} onPress={() => setContraceptiveVerified('no')}>
+                                                <Text style={styles.productPillText}>No</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* --- SECCIÓN 5: NOTAS --- */}
+                    <View style={[styles.moduleContainer, { marginTop: 15, marginBottom: 20 }]}>
+                        <Text style={styles.sectionTitle}>Notas del día</Text>
+                        <Text style={styles.labelSub}>
+                            Espacio libre para registrar cómo te sientes, antojos o cualquier detalle importante.
+                        </Text>
+                        <TextInput
+                            style={styles.textInputStyle}
+                            multiline
+                            value={notas}
+                            onChangeText={setNotas}
+                            placeholder="Escribe algo sobre tu día..."
+                            placeholderTextColor="#666"
+                        />
+                    </View>
+
+                    {/* BOTÓN GUARDAR */}
+                    <TouchableOpacity
+                        style={[styles.saveButton, cargando && { opacity: 0.6 }]}
+                        onPress={handleGuardarDatos}
+                        disabled={cargando}
+                    >
+                        <Text style={styles.saveButtonText}>
+                            {cargando ? "Guardando..." : "Guardar Registro"}
+                        </Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
+            )}
             <BottomNavigation />
         </SafeAreaView>
     );

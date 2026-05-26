@@ -1,4 +1,4 @@
-import { doc, setDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, where, documentId, getDoc } from 'firebase/firestore';
 import { db, auth } from './firebaseConfig';
 
 /**
@@ -69,5 +69,33 @@ export const obtenerTrackingMensual = async (mesAnoStr) => {
     } catch (error) {
         console.error("Error obteniendo el tracking mensual:", error);
         return { success: false, error: error.message, data: {} };
+    }
+};
+
+/**
+ * Obtiene el registro de síntomas de hoy para la usuaria activa.
+ */
+export const obtenerTrackingDiarioHoy = async () => {
+    try {
+        const usuarioActivo = auth.currentUser;
+        if (!usuarioActivo) return { success: false, error: "Usuario no autenticado." };
+
+        const hoy = new Date();
+        const anio = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        const fechaID = `${anio}-${mes}-${dia}`;
+
+        const logRef = doc(db, 'users', usuarioActivo.uid, 'daily_logs', fechaID);
+        const docSnap = await getDoc(logRef);
+
+        if (docSnap.exists()) {
+            return { success: true, data: docSnap.data() };
+        } else {
+            return { success: true, data: null }; // No hay registro hoy todavía
+        }
+    } catch (error) {
+        console.error("Error obteniendo el tracking diario:", error);
+        return { success: false, error: error.message };
     }
 };

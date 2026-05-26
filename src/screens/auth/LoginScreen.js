@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Importamos tus herramientas globales
 import { Colors } from '../../styles/colors';
@@ -13,6 +14,7 @@ export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // 2. Lógica de Login con Email (Usando tu servicio Pro)
     const handleLogin = async () => {
@@ -71,14 +73,20 @@ export default function LoginScreen({ navigation }) {
                 keyboardType="email-address"
                 autoCapitalize="none"
             />
-            <TextInput
-                placeholder="Contraseña"
-                style={styles.input}
-                placeholderTextColor={Colors.textoSecundario}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+            <View style={styles.passwordWrapper}>
+                <TextInput
+                    placeholder="Contraseña"
+                    style={styles.passwordInput}
+                    placeholderTextColor={Colors.textoSecundario}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(prev => !prev)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textoSecundario} />
+                </TouchableOpacity>
+            </View>
 
             {/* Enlace de Olvidé mi contraseña */}
             <TouchableOpacity
@@ -178,6 +186,25 @@ const styles = StyleSheet.create({
         width: '90%',
         color: Colors.textoPrincipal,
         marginTop: 10,
+    },
+    passwordWrapper: {
+        backgroundColor: Colors.tarjetas,
+        borderRadius: 10,
+        marginBottom: 15,
+        width: '90%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        marginTop: 10,
+    },
+    passwordInput: {
+        flex: 1,
+        color: Colors.textoPrincipal,
+        paddingVertical: 10,
+    },
+    eyeButton: {
+        padding: 8,
     },
     forgotContainer: {
         alignSelf: 'flex-end',

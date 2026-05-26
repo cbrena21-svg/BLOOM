@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {View,Text,StyleSheet,TouchableOpacity,Image,TextInput,Alert,ScrollView,ActivityIndicator} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Importamos tus herramientas globales
 import { Colors } from '../../styles/colors';
@@ -20,6 +21,8 @@ export default function SignUpScreen({ navigation }) {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // 2. Lógica para Registro con Google
     const handleGooglePress = async () => {
@@ -102,22 +105,34 @@ export default function SignUpScreen({ navigation }) {
                 value={username}
                 onChangeText={setUsername}
             />
-            <TextInput
-                placeholder="Contraseña"
-                style={styles.input}
-                placeholderTextColor={Colors.textoSecundario}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
-            <TextInput
-                placeholder="Confirmar contraseña"
-                style={styles.input}
-                placeholderTextColor={Colors.textoSecundario}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-            />
+            <View style={styles.passwordWrapper}>
+                <TextInput
+                    placeholder="Contraseña"
+                    style={styles.passwordInput}
+                    placeholderTextColor={Colors.textoSecundario}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(prev => !prev)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textoSecundario} />
+                </TouchableOpacity>
+            </View>
+            <View style={styles.passwordWrapper}>
+                <TextInput
+                    placeholder="Confirmar contraseña"
+                    style={styles.passwordInput}
+                    placeholderTextColor={Colors.textoSecundario}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(prev => !prev)} style={styles.eyeButton} accessibilityLabel={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                    <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textoSecundario} />
+                </TouchableOpacity>
+            </View>
 
             {/* Botón de Google */}
             <TouchableOpacity
@@ -195,15 +210,6 @@ const styles = StyleSheet.create({
         fontFamily: FONT_REGULAR,
         fontSize: 16,
     },
-    input: {
-        backgroundColor: Colors.tarjetas,
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 15,
-        width: '90%',
-        fontSize: 14,
-        color: Colors.textoPrincipal,
-    },
     googleButton: {
         width: '90%',
         backgroundColor: Colors.tarjetas,
@@ -253,5 +259,33 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontFamily: FONT_BOLD,
         textDecorationLine: 'underline',
+    },
+    input: {
+        backgroundColor: Colors.tarjetas,
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 15,
+        width: '90%',
+        fontSize: 14,
+        color: Colors.textoPrincipal,
+    },
+    passwordWrapper: {
+        backgroundColor: Colors.tarjetas,
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 15,
+        width: '90%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 4,
+        padding: 15,
+    },
+    passwordInput: {
+        flex: 1,
+        color: Colors.textoPrincipal,
+        paddingVertical: 10,
+    },
+    eyeButton: {
+        padding: 8,
     },
 });

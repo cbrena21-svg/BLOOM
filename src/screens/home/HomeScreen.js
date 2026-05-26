@@ -64,9 +64,6 @@ export default function HomeScreen() {
 
             <View style={styles.logoContainer}>
                 <Image source={require('../../../assets/icons/Group_35.png')} style={styles.LogoPrincipal} resizeMode="contain" />
-                <TouchableOpacity style={styles.button} onPress={handleLogout}>
-                    <Text style={styles.buttonText}>Exit</Text>
-                </TouchableOpacity>
             </View>
 
             <View style={styles.circleContainer}>
@@ -117,7 +114,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingHorizontal: 20,
     },
     LogoPrincipal: {

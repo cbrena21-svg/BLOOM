@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import dayjs from 'dayjs';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../styles/colors';
 import { FONT_BOLD, FONT_REGULAR } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { auth } from '../../services/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getOnboardingProfile } from '../../services/storageService';
+import { logout } from '../../services/authService';
 
 export default function ProfileScreen() {
     const [profile, setProfile] = useState(null);
@@ -17,11 +19,11 @@ export default function ProfileScreen() {
         let unsub = null;
 
         const loadProfile = async (userId) => {
-            const result = await getOnboardingProfile(userId);
-            if (result.success && result.data) {
-                setProfile(result.data);
-            }
-        };
+                const result = await getOnboardingProfile(userId);
+                if (result.success && result.data) {
+                    setProfile(result.data);
+                }
+            };
 
         if (auth.currentUser && auth.currentUser.uid) {
             loadProfile(auth.currentUser.uid);
@@ -37,6 +39,14 @@ export default function ProfileScreen() {
             if (unsub) unsub();
         };
     }, []);
+
+    const handleLogout = async () => {
+        const result = await logout();
+        if (!result.success) {
+            Alert.alert('Error', result.error || 'No se pudo cerrar la sesión');
+            return;
+        }
+    };
 
     const formatRegularity = value => {
         if (!value) return 'No especificado';
@@ -106,8 +116,13 @@ export default function ProfileScreen() {
             
             <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
+                    <View style = {styles.profileExitContainer}>
                     <Text style={styles.title}>Perfil</Text>
-                    
+                        <TouchableOpacity style={styles.ExitButton} onPress={handleLogout}>
+                            <Ionicons name="log-out-outline" size={22} color={Colors.textoPrincipal} />
+                        </TouchableOpacity>
+                    </View>
+
                     {emailRevealed && email ? (
                         <View style={styles.banner}>
                             <Text style={styles.bannerText}>{email}</Text>
@@ -229,6 +244,24 @@ const styles = StyleSheet.create({
         width: '100%',
         paddingHorizontal: 24,
     },
+    ExitButton: {
+        backgroundColor: Colors.menstrual,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 44,
+        height: 44,
+    },
+    profileExitContainer: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        marginTop: 30,
+    },
     blurBackground1: {
         position: 'absolute',
         top: -10,
@@ -288,7 +321,7 @@ infoBlock: {
         fontSize: 30,
         fontWeight: '800',
         fontFamily: FONT_REGULAR,
-        marginTop: 30, 
+        marginTop: 0,
         alignSelf: 'flex-start',
     },
     label: {

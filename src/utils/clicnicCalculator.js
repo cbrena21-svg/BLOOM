@@ -33,10 +33,11 @@ export const calcularPerfilClinico = (inputs) => {
         flag_extension,
         flag_pathology_miomas: inputs.inp_diagnoses.includes('Miomas uterinos'),
         flag_pathology_endo: inputs.inp_diagnoses.includes('Endometriosis'),
-        flag_pathology_pmos: inputs.inp_diagnoses.includes('SOP (Síndrome de Ovario Poliquístico)'),
-        flag_symptom_pain: inputs.inp_chronic_symptoms.includes('Cólicos incapacitantes (que requieren pastillas)'),
+        flag_pathology_pmos: inputs.inp_diagnoses.includes('PMOS'),
+
+        flag_symptom_pain: inputs.inp_chronic_symptoms.includes('Cólicos incapacitantes (requieren pastillas)'),
         flag_symptom_bloat: inputs.inp_chronic_symptoms.includes('Hinchazón corporal severa / Retención de líquidos'),
-        flag_symptom_acne: inputs.inp_chronic_symptoms.includes('Acné hormonal (en mandíbula/mejillas)'),
+        flag_symptom_acne: inputs.inp_chronic_symptoms.includes('Acné hormonal (mandíbula/mejillas)'),
         flag_symptom_breast: inputs.inp_chronic_symptoms.includes('Sensibilidad o dolor en los pechos'),
     };
 };

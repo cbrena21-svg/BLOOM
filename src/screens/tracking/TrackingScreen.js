@@ -8,6 +8,9 @@ import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { guardarTrackingDiario, obtenerTrackingDiarioHoy } from '../../services/trackingService';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
+import dayjs from 'dayjs';
+import { getMonthWithPhases } from '../../utils/dateHelpers';
+import { CONSEJOS_FASES } from '../../utils/tipsData';
 
 const flowColors = [
     { label: 'Rojo brillante', flag: 'bright_red', hex: '#C81D25' },
@@ -120,6 +123,47 @@ export default function TrackingScreen() {
     const [notas, setNotas] = useState('');
     const [cargando, setCargando] = useState(false);
     const [mostrarResumen, setMostrarResumen] = useState(false);
+
+    const [loading, setLoading] = useState(true);
+    const [themeColor, setThemeColor] = useState('#FFB6C1');
+
+    useEffect(() => {
+        const calcularColorDeFase = async () => {
+            try {
+                const resultado = await obtenerPerfilUsuario();
+
+                if (resultado.success && resultado.data) {
+                    const perfil = resultado.data;
+                    const diasDelMes = getMonthWithPhases(dayjs(), perfil);
+                    const diaDeHoy = diasDelMes.find(d => d.isToday === true);
+
+                    let faseCalculada = 'folicular';
+
+                    // Lógica de perfil artificial o natural
+                    if (perfil.user_profile === 'ARTIFICIAL') {
+                        if (diaDeHoy && diaDeHoy.phase === 'menstrual') {
+                            faseCalculada = 'menstrual';
+                        } else {
+                            faseCalculada = 'folicular';
+                        }
+                    } else {
+                        faseCalculada = diaDeHoy ? diaDeHoy.phase : 'folicular';
+                    }
+
+                    // Extraer el color de CONSEJOS_FASES
+                    const infoFase = CONSEJOS_FASES[faseCalculada];
+                    setThemeColor(infoFase?.colorTema || '#FFB6C1');
+                }
+            } catch (error) {
+                console.error("Error al calcular la fase en Tracking:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        calcularColorDeFase();
+    }, []);
+
 
     useFocusEffect(
         useCallback(() => {
@@ -323,7 +367,7 @@ export default function TrackingScreen() {
         }
     };
 
-    if (cargandoFirebase) return (
+    if (loading) return (
         <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
             <ActivityIndicator size="large" color={Colors.menstrual || '#C81D25'} />
         </SafeAreaView>
@@ -370,7 +414,7 @@ export default function TrackingScreen() {
                         </Text>
 
                         <TouchableOpacity
-                            style={styles.transparentAccentButton}
+                            style={[styles.transparentAccentButton, { backgroundColor: themeColor }]}
                             onPress={() => setMostrarResumen(false)}
                         >
                             <Text style={[styles.productPillText, { color: '#fff', fontWeight: 'bold' }]}>
@@ -385,7 +429,7 @@ export default function TrackingScreen() {
                    ========================================================= */
                 <ScrollView contentContainerStyle={styles.scrollContent}>
 
-                    <Text style={styles.screenSubtitle}>Registra tus síntomas de hoy</Text>
+                    <Text style={[styles.screenSubtitle, { color: themeColor }]}>Registra tus síntomas de hoy</Text>
 
                     {/* --- SECCIÓN 1: CONTROL DE FLUJO --- */}
                     <View style={styles.moduleContainer}>
@@ -405,7 +449,11 @@ export default function TrackingScreen() {
                                 <Text style={styles.labelSub}>¿Qué producto utilizaste hoy?</Text>
                                 <View style={styles.row}>
                                     <TouchableOpacity
-                                        style={[styles.productPill, selectedProduct === 'regular' && styles.singleSelectedPill]}
+                                        style={[
+                                            styles.productPill,
+                                            selectedProduct === 'regular' && styles.singleSelectedPill,
+                                            selectedProduct === 'regular' && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
                                         onPress={() => handleProductChange('regular')}
                                     >
                                         <Text style={[styles.productPillText, selectedProduct === 'regular' && styles.singleSelectedText]}>
@@ -413,7 +461,11 @@ export default function TrackingScreen() {
                                         </Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={[styles.productPill, selectedProduct === 'nocturna' && styles.singleSelectedPill]}
+                                        style={[
+                                            styles.productPill,
+                                            selectedProduct === 'nocturna' && styles.singleSelectedPill,
+                                            selectedProduct === 'nocturna' && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
                                         onPress={() => handleProductChange('nocturna')}
                                     >
                                         <Text style={[styles.productPillText, selectedProduct === 'nocturna' && styles.singleSelectedText]}>
@@ -421,7 +473,11 @@ export default function TrackingScreen() {
                                         </Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={[styles.productPill, selectedProduct === 'copa' && styles.singleSelectedPill]}
+                                        style={[
+                                            styles.productPill,
+                                            selectedProduct === 'copa' && styles.singleSelectedPill,
+                                            selectedProduct === 'copa' && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
                                         onPress={() => handleProductChange('copa')}
                                     >
                                         <Text style={[styles.productPillText, selectedProduct === 'copa' && styles.singleSelectedText]}>
@@ -433,10 +489,26 @@ export default function TrackingScreen() {
                                 {/* Pregunta de coágulos (ahora independiente del contador) */}
                                 <Text style={styles.labelSubMargin}>¿Identificaste presencia de coágulos?</Text>
                                 <View style={styles.row}>
-                                    <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, hasClots === false && styles.singleSelectedPill]} onPress={() => setHasClots(false)}>
+                                    <TouchableOpacity
+                                        disabled={!isPeriodActive}
+                                        style={[
+                                            styles.productPill,
+                                            hasClots === false && styles.singleSelectedPill,
+                                            hasClots === false && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setHasClots(false)}
+                                    >
                                         <Text style={[styles.productPillText, hasClots === false && styles.singleSelectedText]}>No</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity disabled={!isPeriodActive} style={[styles.productPill, hasClots === true && styles.singleSelectedPill]} onPress={() => setHasClots(true)}>
+                                    <TouchableOpacity
+                                        disabled={!isPeriodActive}
+                                        style={[
+                                            styles.productPill,
+                                            hasClots === true && styles.singleSelectedPill,
+                                            hasClots === true && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setHasClots(true)}
+                                    >
                                         <Text style={[styles.productPillText, hasClots === true && styles.singleSelectedText]}>Sí</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -455,7 +527,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSub}>Síntomas Físicos:</Text>
                             <View style={styles.row}>
                                 {symptomsList.map(symptom => (
-                                    <TouchableOpacity key={symptom.id} style={[styles.productPill, selectedSymptoms.includes(symptom.id) && styles.singleSelectedPill]} onPress={() => toggleSymptom(symptom.id)}>
+                                    <TouchableOpacity
+                                        key={symptom.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedSymptoms.includes(symptom.id) && styles.singleSelectedPill,
+                                            selectedSymptoms.includes(symptom.id) && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => toggleSymptom(symptom.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedSymptoms.includes(symptom.id) && styles.singleSelectedText]}>{symptom.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -464,7 +544,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSubMargin}>Estado de tu digestión:</Text>
                             <View style={styles.row}>
                                 {digestionOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedDigestion === option.id && styles.singleSelectedPill]} onPress={() => setSelectedDigestion(option.id)}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedDigestion === option.id && styles.singleSelectedPill,
+                                            selectedDigestion === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setSelectedDigestion(option.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedDigestion === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -483,7 +571,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSub}>Nivel de Energía (Batería):</Text>
                             <View style={styles.row}>
                                 {energyOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedEnergy === option.id && styles.singleSelectedPill]} onPress={() => setSelectedEnergy(option.id)}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedEnergy === option.id && styles.singleSelectedPill,
+                                            selectedEnergy === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setSelectedEnergy(option.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedEnergy === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -492,7 +588,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSubMargin}>Estado de Ánimo:</Text>
                             <View style={styles.row}>
                                 {moodOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedMood === option.id && styles.singleSelectedPill]} onPress={() => setSelectedMood(option.id)}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedMood === option.id && styles.singleSelectedPill,
+                                            selectedMood === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setSelectedMood(option.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedMood === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -501,7 +605,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSubMargin}>Nivel de Estrés:</Text>
                             <View style={styles.row}>
                                 {stressOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedStress === option.id && styles.singleSelectedPill]} onPress={() => setSelectedStress(option.id)}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedStress === option.id && styles.singleSelectedPill,
+                                            selectedStress === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setSelectedStress(option.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedStress === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -510,7 +622,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSubMargin}>Calidad del Sueño:</Text>
                             <View style={styles.row}>
                                 {sleepOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedSleep === option.id && styles.singleSelectedPill]} onPress={() => setSelectedSleep(option.id)}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedSleep === option.id && styles.singleSelectedPill,
+                                            selectedSleep === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setSelectedSleep(option.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedSleep === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -519,10 +639,18 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSubMargin}>Ejercicio Físico:</Text>
                             <View style={styles.row}>
                                 {exerciseOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedExercise === option.id && styles.singleSelectedPill]} onPress={() => {
-                                        setSelectedExercise(option.id);
-                                        if (option.id === 'ninguno') setExerciseMinutes(null);
-                                    }}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedExercise === option.id && styles.singleSelectedPill,
+                                            selectedExercise === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => {
+                                            setSelectedExercise(option.id);
+                                            if (option.id === 'ninguno') setExerciseMinutes(null);
+                                        }}
+                                    >
                                         <Text style={[styles.productPillText, selectedExercise === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -537,7 +665,8 @@ export default function TrackingScreen() {
                                                 key={time}
                                                 style={[
                                                     styles.productPill,
-                                                    exerciseMinutes === time && styles.singleSelectedPill
+                                                    exerciseMinutes === time && styles.singleSelectedPill,
+                                                    exerciseMinutes === time && { backgroundColor: themeColor, borderColor: themeColor }
                                                 ]}
                                                 onPress={() => setExerciseMinutes(time)}
                                             >
@@ -561,7 +690,15 @@ export default function TrackingScreen() {
                             <Text style={styles.labelSub}>Flujo Cervical:</Text>
                             <View style={styles.row}>
                                 {cervicalFluidOptions.map(option => (
-                                    <TouchableOpacity key={option.id} style={[styles.productPill, selectedFluid === option.id && styles.singleSelectedPill]} onPress={() => setSelectedFluid(option.id)}>
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.productPill,
+                                            selectedFluid === option.id && styles.singleSelectedPill,
+                                            selectedFluid === option.id && { backgroundColor: themeColor, borderColor: themeColor }
+                                        ]}
+                                        onPress={() => setSelectedFluid(option.id)}
+                                    >
                                         <Text style={[styles.productPillText, selectedFluid === option.id && styles.singleSelectedText]}>{option.label}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -569,10 +706,24 @@ export default function TrackingScreen() {
 
                             <Text style={styles.labelSubMargin}>Relaciones sexuales:</Text>
                             <View style={styles.row}>
-                                <TouchableOpacity style={[styles.productPill, sexPresent === 'si' && styles.singleSelectedPill]} onPress={() => { setSexPresent('si'); setProtectionType(null); setSelectedProtection(null); }}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.productPill,
+                                        sexPresent === 'si' && styles.singleSelectedPill,
+                                        sexPresent === 'si' && { backgroundColor: themeColor, borderColor: themeColor }
+                                    ]}
+                                    onPress={() => { setSexPresent('si'); setProtectionType(null); setSelectedProtection(null); }}
+                                >
                                     <Text style={[styles.productPillText, sexPresent === 'si' && styles.singleSelectedText]}>Sí</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[styles.productPill, sexPresent === 'no' && styles.singleSelectedPill]} onPress={() => { setSexPresent('no'); setProtectionType(null); setSelectedProtection(null); }}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.productPill,
+                                        sexPresent === 'no' && styles.singleSelectedPill,
+                                        sexPresent === 'no' && { backgroundColor: themeColor, borderColor: themeColor }
+                                    ]}
+                                    onPress={() => { setSexPresent('no'); setProtectionType(null); setSelectedProtection(null); }}
+                                >
                                     <Text style={[styles.productPillText, sexPresent === 'no' && styles.singleSelectedText]}>No</Text>
                                 </TouchableOpacity>
                             </View>
@@ -582,10 +733,24 @@ export default function TrackingScreen() {
                                 <View style={{ marginTop: 10 }}>
                                     <Text style={styles.labelSubMargin}>Protección utilizada:</Text>
                                     <View style={styles.row}>
-                                        <TouchableOpacity style={[styles.productPill, protectionType === 'con_proteccion' && styles.singleSelectedPill]} onPress={() => { setProtectionType('con_proteccion'); setSelectedProtection(null); }}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.productPill,
+                                                protectionType === 'con_proteccion' && styles.singleSelectedPill,
+                                                protectionType === 'con_proteccion' && { backgroundColor: themeColor, borderColor: themeColor }
+                                            ]}
+                                            onPress={() => { setProtectionType('con_proteccion'); setSelectedProtection(null); }}
+                                        >
                                             <Text style={[styles.productPillText, protectionType === 'con_proteccion' && styles.singleSelectedText]}>Con protección</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.productPill, protectionType === 'sin_proteccion' && styles.singleSelectedPill]} onPress={() => { setProtectionType('sin_proteccion'); setSelectedProtection(null); }}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.productPill,
+                                                protectionType === 'sin_proteccion' && styles.singleSelectedPill,
+                                                protectionType === 'sin_proteccion' && { backgroundColor: themeColor, borderColor: themeColor }
+                                            ]}
+                                            onPress={() => { setProtectionType('sin_proteccion'); setSelectedProtection(null); }}
+                                        >
                                             <Text style={[styles.productPillText, protectionType === 'sin_proteccion' && styles.singleSelectedText]}>Sin protección</Text>
                                         </TouchableOpacity>
                                     </View>
@@ -595,7 +760,15 @@ export default function TrackingScreen() {
                                             <Text style={styles.labelSubMargin}>Método de barrera o natural:</Text>
                                             <View style={styles.row}>
                                                 {metodosBarreraNatural.map(metodo => (
-                                                    <TouchableOpacity key={metodo} style={[styles.productPill, selectedProtection === metodo && styles.singleSelectedPill]} onPress={() => setSelectedProtection(metodo)}>
+                                                    <TouchableOpacity
+                                                        key={metodo}
+                                                        style={[
+                                                            styles.productPill,
+                                                            selectedProtection === metodo && styles.singleSelectedPill,
+                                                            selectedProtection === metodo && { backgroundColor: themeColor, borderColor: themeColor }
+                                                        ]}
+                                                        onPress={() => setSelectedProtection(metodo)}
+                                                    >
                                                         <Text style={[styles.productPillText, selectedProtection === metodo && styles.singleSelectedText]}>{metodo}</Text>
                                                     </TouchableOpacity>
                                                 ))}
@@ -610,10 +783,24 @@ export default function TrackingScreen() {
                                 <View style={{ marginTop: 10 }}>
                                     <Text style={styles.labelSubMargin}>¿Verificaste tu método hoy? ({userContraceptive})</Text>
                                     <View style={styles.row}>
-                                        <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'si' && styles.singleSelectedPill]} onPress={() => setContraceptiveVerified('si')}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.productPill,
+                                                contraceptiveVerified === 'si' && styles.singleSelectedPill,
+                                                contraceptiveVerified === 'si' && { backgroundColor: themeColor, borderColor: themeColor }
+                                            ]}
+                                            onPress={() => setContraceptiveVerified('si')}
+                                        >
                                             <Text style={[styles.productPillText, contraceptiveVerified === 'si' && styles.singleSelectedText]}>Sí</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.productPill, contraceptiveVerified === 'no' && styles.singleSelectedPill]} onPress={() => setContraceptiveVerified('no')}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.productPill,
+                                                contraceptiveVerified === 'no' && styles.singleSelectedPill,
+                                                contraceptiveVerified === 'no' && { backgroundColor: themeColor, borderColor: themeColor }
+                                            ]}
+                                            onPress={() => setContraceptiveVerified('no')}
+                                        >
                                             <Text style={[styles.productPillText, contraceptiveVerified === 'no' && styles.singleSelectedText]}>No</Text>
                                         </TouchableOpacity>
                                     </View>
@@ -640,9 +827,13 @@ export default function TrackingScreen() {
                     </View>
                     {/* FIN SECCIÓN 5 */}
 
-                    {/* BOTÓN GUARDAR (Ahora fuera de las cajas modulares) */}
+                    {/* BOTÓN GUARDAR */}
                     <TouchableOpacity
-                        style={[styles.transparentAccentButton, cargando && { opacity: 0.6 }]}
+                        style={[
+                            styles.transparentAccentButton,
+                            { backgroundColor: themeColor },
+                            cargando && { opacity: 0.6 }
+                        ]}
                         onPress={handleGuardarDatos}
                         disabled={cargando}
                     >

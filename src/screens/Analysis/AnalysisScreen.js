@@ -203,12 +203,11 @@ export default function TipsScreen({ navigation }) {
                                     {alertasActivas.map((alerta, index) => (
                                         <View key={index} style={styles.infoBlock}>
                                             <Text style={styles.infoBlockTitle}>{alerta.titulo}</Text>
-                                            <Text style={styles.paragraphText}>{alerta.consejoGeneral}</Text>
                                             <Text style={styles.sectionBulletHeader}>Recomendaciones:</Text>
                                             {alerta.recomendados.map((rec, rIdx) => <Text key={rIdx} style={styles.bulletItemText}>• {rec}</Text>)}
                                             {alerta.evitar && alerta.evitar.length > 0 && (
                                                 <>
-                                                    <Text style={[styles.sectionBulletHeader, { color: themeColor }]}>Evitar prioritariamente:</Text>
+                                                    <Text style={[styles.sectionBulletHeader, { color: themeColor }]}>Evita:</Text>
                                                     {alerta.evitar.map((ev, eIdx) => <Text key={eIdx} style={styles.bulletItemText}>• {ev}</Text>)}
                                                 </>
                                             )}
@@ -219,8 +218,8 @@ export default function TipsScreen({ navigation }) {
 
                             {modalVisible === 'nutricion' && (
                                 <View>
-                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Nutrición Inteligente</Text>
-                                    <Text style={styles.paragraphText}>{infoFase?.nutricion?.consejoGeneral}</Text>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Nutrición</Text>
+                                    <Text style={styles.sectionBulletHeader}>Recomendaciones:</Text>
                                     {infoFase?.nutricion?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
                                     <View style={styles.superContainerInside}>
                                         <Text style={styles.sectionBulletHeader}>Lista del Súper Sugerida:</Text>
@@ -236,8 +235,8 @@ export default function TipsScreen({ navigation }) {
 
                             {modalVisible === 'ejercicio' && (
                                 <View>
-                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Ejercicio y Energía</Text>
-                                    <Text style={styles.paragraphText}>{infoFase?.ejercicio?.consejoGeneral}</Text>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Ejercicio</Text>
+                                    <Text style={styles.sectionBulletHeader}>Recomendaciones:</Text>
                                     {infoFase?.ejercicio?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
                                     <Text style={styles.sectionBulletHeader}>Ejercicios ideales para hoy:</Text>
                                     <View style={[styles.tagContainer, { borderColor: themeColor }]}>
@@ -250,17 +249,17 @@ export default function TipsScreen({ navigation }) {
 
                             {modalVisible === 'proyectos' && (
                                 <View>
-                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Enfoque y Proyectos</Text>
-                                    <Text style={styles.paragraphText}>{infoFase?.proyectos?.consejoGeneral}</Text>
-                                    {infoFase?.proyectos?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Proyectos</Text>
+                                    <Text style={styles.sectionBulletHeader}>Recomendaciones:</Text>
+                                    {infoFase?.proyectos?.actividades.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
                                 </View>
                             )}
 
                             {modalVisible === 'relaciones' && (
                                 <View>
-                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Relaciones & Líbido</Text>
-                                    <Text style={styles.paragraphText}>{infoFase?.relaciones?.consejoGeneral}</Text>
-                                    {infoFase?.relaciones?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Relaciones</Text>
+                                    <Text style={styles.sectionBulletHeader}>Recomendaciones:</Text>
+                                    {infoFase?.relaciones?.planesIdeales.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
                                 </View>
                             )}
 

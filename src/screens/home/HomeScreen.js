@@ -6,28 +6,30 @@ import CycleCircle from '../../components/Cycle/CycleCircle';
 import MoonPhase from '../../components/Cycle/MoonPhase';
 import EnergyBar from '../../components/Cycle/EnergyBar';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
-import { useCyclePhase } from '../../hooks/useCyclePhase';
 import { phases } from '../../data/phases';
 import { Colors } from '../../styles/colors';
 import { FONT_BOLD, FONT_REGULAR } from '../../styles/typography';
 import { logout } from '../../services/authService';
-import { getCurrentCycleDay } from '../../utils/cycleCalculator';
+import { getPhaseForDay, getMonthWithPhases } from '../../utils/dateHelpers';
 import { auth, db } from '../../services/firebaseConfig';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import dayjs from 'dayjs';
 
 export default function HomeScreen() {
     const [day, setDay] = useState(1);
     const [cycleLength, setCycleLength] = useState(28);
     const [userProfile, setUserProfile] = useState(null);
+    const [phaseKey, setPhaseKey] = useState('menstrual');
 
-    const parseDate = (value) => {
+const parseDate = (value) => {
         if (!value) return null;
         if (typeof value.toDate === 'function') return value.toDate();
         if (value.seconds) return new Date(value.seconds * 1000);
 
-        const parsed = new Date(value);
-        return Number.isNaN(parsed.getTime()) ? null : parsed;
+        // Usamos dayjs para interpretar correctamente el string 'YYYY-MM-DD' en la zona local
+        const parsed = dayjs(value);
+        return parsed.isValid() ? parsed.toDate() : null;
     };
 
     const getBaseLastPeriodDate = (profile) => {
@@ -43,17 +45,29 @@ export default function HomeScreen() {
     };
 
     const recalculateCycleDay = useCallback((profile) => {
-        const baseDate = getBaseLastPeriodDate(profile);
         const length = Number(profile?.avg_cycle_length || profile?.inp_cycle_length || 28) || 28;
 
         setCycleLength(length);
 
-        if (!baseDate) {
+        if (!profile) {
             setDay(1);
+            setPhaseKey('menstrual');
             return;
         }
 
-        setDay(getCurrentCycleDay(baseDate, length));
+        // Usamos el inicio del día para evitar desfases por zonas horarias
+        const monthDays = getMonthWithPhases(dayjs().startOf('day'), profile);
+        const todayEntry = monthDays.find((item) => item?.isToday);
+
+        if (todayEntry?.cycleDay) {
+            setDay(todayEntry.cycleDay);
+            setPhaseKey(todayEntry.phase || 'menstrual');
+            return;
+        }
+
+        const fallbackPhase = getPhaseForDay(1, profile, length) || 'menstrual';
+        setDay(1);
+        setPhaseKey(fallbackPhase);
     }, []);
 
     useEffect(() => {
@@ -128,11 +142,10 @@ export default function HomeScreen() {
         return () => clearTimeout(timeoutId);
     }, [userProfile, cycleLength, recalculateCycleDay]);
 
-    // Obtenemos la fase actual mediante el Hook
-    const phaseData = useCyclePhase(day);
+    const derivedPhase = getPhaseForDay(day, userProfile, cycleLength) || phaseKey;
 
-    // SEGURIDAD: Si phaseData es undefined, creamos un objeto seguro temporal para que la app no explote
-    const currentPhase = phaseData || {
+    // SEGURIDAD: Si currentPhase es undefined, creamos un objeto seguro temporal
+    const currentPhase = phases[derivedPhase] || {
         color: Colors.menstrual || '#FF6B6B',
         title: 'Cargando...',
         message: 'Sincronizando los datos de tu ciclo...',
@@ -140,12 +153,31 @@ export default function HomeScreen() {
         energy: 0.1
     };
 
+    const circleBaseDate = getBaseLastPeriodDate(userProfile);
+    // Normalizar la base al inicio del día para mantener consistencia con dateHelpers
+    const circleBaseDayjs = circleBaseDate ? dayjs(circleBaseDate).startOf('day') : null;
+    const circleDate = circleBaseDayjs
+        ? circleBaseDayjs.add(Math.max(day - 1, 0), 'day')
+        : dayjs().startOf('day');
+    const dateLabel = circleDate.format('DD/MM/YYYY');
+
     const handleLogout = async () => {
         const result = await logout();
         if (!result.success) {
             Alert.alert('Error', result.error || 'No se pudo cerrar la sesión');
             return;
         }
+    };
+
+    const handleDayChange = (newDay) => {
+        setDay(newDay);
+
+        if (!userProfile) {
+            return;
+        }
+
+        const nextPhase = getPhaseForDay(newDay, userProfile, cycleLength) || 'menstrual';
+        setPhaseKey(nextPhase);
     };
 
     return (
@@ -160,18 +192,20 @@ export default function HomeScreen() {
                 <CycleCircle
                     color={currentPhase.color}
                     day={day}
-                    onDayChange={setDay}
+                    onDayChange={handleDayChange}
                     cycleLength={cycleLength}
                 />
 
                 <View style={styles.moonContainer}>
                     {/* debug={true}*/}
-                    <MoonPhase phase={phaseData === phases.menstrual ? 'quarter_waning' : currentPhase.moon} />
+                    <MoonPhase phase={derivedPhase === 'menstrual' ? 'quarter_waning' : currentPhase.moon} />
                 </View>
             </View>
 
             <View style={styles.formContainer}>
                 <Text style={styles.title}>{currentPhase.title}</Text>
+
+                <Text style={styles.dateText}>{dateLabel}</Text>
 
                 <Text style={styles.message}>
                     {currentPhase.message}
@@ -204,13 +238,12 @@ const styles = StyleSheet.create({
     logoContainer: {
         width: '100%',
         alignItems: 'center',
-        marginBottom: 10,
         flexDirection: 'row',
         justifyContent: 'center',
         paddingHorizontal: 20,
     },
     LogoPrincipal: {
-        width: 200,
+        width: 190,
         height: 100,
     },
     button: {
@@ -231,7 +264,14 @@ const styles = StyleSheet.create({
         fontSize: 34,
         fontWeight: '800',
         fontFamily: FONT_BOLD,
-        marginTop: 20,
+        marginTop: 10,
+    },
+    dateText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
+        marginTop: 8,
+        fontFamily: FONT_REGULAR,
+        letterSpacing: 0.6,
     },
     formContainer: {
         width: '100%',

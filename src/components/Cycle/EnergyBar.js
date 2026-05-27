@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: Colors.tarjetas,
     overflow: 'hidden',
-    marginTop: 30,
+    marginTop: 25,
     },
 
     fill: {

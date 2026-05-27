@@ -9,7 +9,7 @@ export const phases = {
         days: [1, 5],
         moon: 'waning',
     },
-    follicular: {
+    folicular: {
         title: 'Fase Folicular',
         message: 'Cuida tu energía y sé amable contigo.',
         color: Colors.folicular,
@@ -17,7 +17,7 @@ export const phases = {
         days: [6, 13],
         moon: 'quarter',
     },
-    ovulacion: {
+    ovulatoria: {
         title: 'Fase Ovulatoria',
         message: 'Tu energía está en su punto más alto.',
         color: Colors.ovulacion,

@@ -124,13 +124,13 @@ export default function CalendarScreen() {
     const handlePrevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
     const handleNextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
 
-    // 🌟 Manejo de apertura del nuevo Modal estilo tu amiga
+    // Manejo de apertura del nuevo Modal estilo tu amiga
     const handleEditPeriod = () => {
         setSelectedPeriodDate(currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate());
         setShowDatePicker(true);
     };
 
-    // 🌟 Nueva función para procesar y guardar la fecha seleccionada en el Modal
+    // Nueva función para procesar y guardar la fecha seleccionada en el Modal
     const handleSavePeriodDate = async () => {
         setShowDatePicker(false);
         if (!selectedPeriodDate) return;
@@ -218,7 +218,7 @@ export default function CalendarScreen() {
                 />
             </View>
 
-            {/* 🌟 NUEVO MODAL CROSS-PLATFORM INTEGRADO CORRECTAMENTE */}
+            {/* NUEVO MODAL CROSS-PLATFORM INTEGRADO CORRECTAMENTE */}
             <Modal
                 visible={showDatePicker}
                 transparent
@@ -232,8 +232,9 @@ export default function CalendarScreen() {
                             current={dayjs(selectedPeriodDate).format('YYYY-MM-DD')}
                             maxDate={dayjs().format('YYYY-MM-DD')}
                             onDayPress={(day) => {
-                                setSelectedPeriodDate(new Date(`${day.dateString}T00:00:00`));
-                            }}
+                                // Dayjs lee 'YYYY-MM-DD' y lo asigna directo a tu zona local de forma segura
+                                setSelectedPeriodDate(dayjs(day.dateString).toDate());
+}}
                             markedDates={{
                                 [dayjs(selectedPeriodDate).format('YYYY-MM-DD')]: {
                                     selected: true,

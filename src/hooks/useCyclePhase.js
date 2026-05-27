@@ -6,11 +6,11 @@ export const useCyclePhase = (day) => {
     }
 
     if (day >= 6 && day <= 13) {
-        return phases.follicular;
+        return phases.folicular;
     }
 
     if (day >= 14 && day <= 16) {
-        return phases.ovulacion;
+        return phases.ovulatoria;
     }
 
     return phases.lutea;

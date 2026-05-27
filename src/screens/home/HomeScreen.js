@@ -167,6 +167,47 @@ export default function HomeScreen() {
         : dayjs().startOf('day');
     const dateLabel = circleDate.format('DD/MM/YYYY');
 
+    // Frases para Home
+    const PHRASES_BY_PHASE = {
+        menstrual: [
+            'Es momento de descansar y reconectar contigo.',
+            'Escucha tu cuerpo, hoy necesita calma.',
+            'Date permiso de ir más despacio.',
+            'Tu energía baja también es parte de tu equilibrio.'
+        ],
+        folicular: [
+            'Es un buen momento para empezar algo nuevo.',
+            'Tu energía está creciendo, aprovéchala.',
+            'Hoy puedes avanzar con claridad y enfoque.',
+            'Fluye con esta nueva energía.'
+        ],
+        ovulatoria: [
+            'Estás en tu mejor momento, confía en ti.',
+            'Tu energía está en su punto más alto.',
+            'Es un gran día para conectar con los demás.',
+            'Brilla con confianza.'
+        ],
+        lutea: [
+            'Es momento de cerrar ciclos con calma.',
+            'Escucha tus emociones, tienen algo que decirte.',
+            'Baja el ritmo y prioriza lo importante.',
+            'Cuida tu energía y sé amable contigo.'
+        ]
+    };
+
+    const [selectedPhrase, setSelectedPhrase] = useState(currentPhase.message || '');
+
+    const pickRandom = (arr) => {
+        if (!Array.isArray(arr) || arr.length === 0) return '';
+        return arr[Math.floor(Math.random() * arr.length)];
+    };
+
+    useEffect(() => {
+        const key = derivedPhase || 'menstrual';
+        const phrases = PHRASES_BY_PHASE[key] || [currentPhase.message];
+        setSelectedPhrase(pickRandom(phrases));
+    }, [derivedPhase]);
+
     const handleLogout = async () => {
         const result = await logout();
         if (!result.success) {
@@ -214,7 +255,7 @@ export default function HomeScreen() {
                 <Text style={styles.dateText}>{dateLabel}</Text>
 
                 <Text style={styles.message}>
-                    {currentPhase.message}
+                    {selectedPhrase}
                 </Text>
 
                 <EnergyBar

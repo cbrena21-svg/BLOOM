@@ -329,8 +329,8 @@ const styles = StyleSheet.create({
 
     // ESTILOS GRID Y TARJETAS NEUTRAS
     gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
-    fullWidthCard: { width: '100%', height: 85, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', marginBottom: 4 },
-    squareCard: { width: '47.5%', aspectRatio: 1, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' },
+    fullWidthCard: { width: '100%', height: 85, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: '#282A39', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', marginBottom: 4 },
+    squareCard: { width: '47.5%', aspectRatio: 1, borderRadius: 22, backgroundColor: '#282A39', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' },
     cardInnerCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     cardText: { fontFamily: FONT_BOLD, fontSize: 12, letterSpacing: 1.5, textAlign: 'center', color: '#FFFFFF' },
 

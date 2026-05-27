@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Importamos tus herramientas globales
 import { Colors } from '../../styles/colors';
 import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import { useAuth } from '../../hooks/useAuth';
-import { login } from '../../services/authService'; // Usamos la función de login
+import { login } from '../../services/authService';
 
 export default function LoginScreen({ navigation }) {
-    // 1. Estados: Solo necesitamos Email y Password
+    // necesitamos Email y Password
     const { loginConGoogle, isReady } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // 2. Lógica de Login con Email (Usando tu servicio Pro)
+    //Lógica de Login con Email (Usando tu servicio Pro)
     const handleLogin = async () => {
         if (!email || !password) {
             Alert.alert('Campos incompletos', 'Por favor, ingresa tu correo y contraseña.');
@@ -30,13 +29,13 @@ export default function LoginScreen({ navigation }) {
             // El RootNavigator detectará al usuario y nos mandará al Home
             console.log("Sesión iniciada correctamente");
         } else {
-            // Muestra el error traducido (ej: "Correo o contraseña incorrectos")
+            // Muestra el error traducido 
             Alert.alert('Error de acceso', respuesta.error);
         }
         setLoading(false);
     };
 
-    // 3. Lógica de Google (Reutilizamos la misma lógica)
+    //Lógica de Google
     const handleGooglePress = async () => {
         setLoading(true);
         const resultado = await loginConGoogle();
@@ -48,7 +47,6 @@ export default function LoginScreen({ navigation }) {
 
     return (
         <ScrollView contentContainerStyle={styles.container} bounces={false}>
-            {/* Fondo y Logo igual al SignUp */}
             <Image
                 source={require('../../../assets/images/CircleLayer.png')}
                 style={styles.blurBackground}
@@ -62,42 +60,39 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.title}>Bienvenida de nuevo</Text>
             <Text style={styles.text}>Retoma tu equilibrio</Text>
 
-            {/* Formulario de Inicio de Sesión */}
-            <View style = {styles.formContainer}>
-            <TextInput
-                placeholder="Correo electrónico"
-                style={styles.input}
-                placeholderTextColor={Colors.textoSecundario}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-            />
-            <View style={styles.passwordWrapper}>
+            <View style={styles.formContainer}>
                 <TextInput
-                    placeholder="Contraseña"
-                    style={styles.passwordInput}
+                    placeholder="Correo electrónico"
+                    style={styles.input}
                     placeholderTextColor={Colors.textoSecundario}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
                     autoCapitalize="none"
                 />
-                <TouchableOpacity onPress={() => setShowPassword(prev => !prev)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
-                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textoSecundario} />
+                <View style={styles.passwordWrapper}>
+                    <TextInput
+                        placeholder="Contraseña"
+                        style={styles.passwordInput}
+                        placeholderTextColor={Colors.textoSecundario}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(prev => !prev)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+                        <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={Colors.textoSecundario} />
+                    </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('ForgotPassword')}
+                    style={styles.forgotContainer}
+                >
+                    <Text style={styles.forgotText}>¿Has olvidado tu contraseña?</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Enlace de Olvidé mi contraseña */}
-            <TouchableOpacity
-                onPress={() => navigation.navigate('ForgotPassword')}
-                style={styles.forgotContainer}
-            >
-                <Text style={styles.forgotText}>¿Has olvidado tu contraseña?</Text>
-            </TouchableOpacity>
-            </View>
-
-            {/* Botón de Google */}
             <TouchableOpacity
                 style={styles.googleButton}
                 onPress={handleGooglePress}
@@ -111,7 +106,6 @@ export default function LoginScreen({ navigation }) {
                 <Text style={styles.googleButtonText}>Iniciar sesión con Google</Text>
             </TouchableOpacity>
 
-            {/* Enlace para ir al Registro */}
             <TouchableOpacity
                 onPress={() => navigation.navigate('Signup')}
                 style={styles.linkContainer}
@@ -121,7 +115,6 @@ export default function LoginScreen({ navigation }) {
                 </Text>
             </TouchableOpacity>
 
-            {/* Botón Principal de Iniciar Sesión */}
             <TouchableOpacity
                 style={styles.loginButton}
                 onPress={handleLogin}
@@ -137,7 +130,6 @@ export default function LoginScreen({ navigation }) {
     );
 }
 
-// Mismos estilos que SignUp para consistencia total
 const styles = StyleSheet.create({
     container: {
         backgroundColor: Colors.fondo,
@@ -172,7 +164,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: FONT_REGULAR,
     },
-        formContainer: {
+    formContainer: {
         width: '100%',
         alignItems: 'center',
         marginBottom: 20,

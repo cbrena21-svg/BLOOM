@@ -62,7 +62,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         }
     }, [paginaActual]);
 
-    // Controla el brinco (0 = en el suelo, 1 = punto más alto)
     const bounceValue = useRef(new Animated.Value(0)).current;
 
     // Interpolación para el movimiento vertical de la luna
@@ -103,7 +102,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                 ])
             ).start();
 
-            // Frases limpias y profesionales sin emojis
             const frases = [
                 "Analizando regularidad de tu ciclo...",
                 "Calculando reservas y flujo menstrual...",
@@ -131,25 +129,17 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         if (paginaActual < totalPaginas) {
             setPaginaActual(paginaActual + 1);
         } else {
-            // --- ¡LLEGAMOS AL FINAL DE LAS 16 PREGUNTAS! ---
-
-            // COMPROBACIÓN LOCAL (Esto responde a tu pregunta 4 sobre el console.log):
-            // Sirve para ver en tu terminal de la computadora si los cálculos matemáticos son correctos antes de subirlos.
             const perfilCalculado = calcularPerfilClinico(onboardingData);
             console.log("PROBANDO CÁLCULOS BLOOM:", perfilCalculado);
 
-            // Activamos tu hermosa pantalla de carga con las frases clínicas
             setIsCalculating(true);
 
-            // Mandamos los datos brutos a la "aduana" de Firebase que creamos en el paso anterior
             const resultado = await guardarPerfilOnboarding(onboardingData);
 
-            // Apagamos el cargando simulado (puedes darle unos segundos si lo deseas, o directo)
             setIsCalculating(false);
 
             if (resultado.success) {
                 console.log("¡Perfil clínico guardado con éxito en la nube!");
-                // ✅ Activamos el puente para cambiar de pantalla de inmediato
                 if (onOnboardingComplete) {
                     onOnboardingComplete();
                 }
@@ -195,7 +185,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         setShowCalendar(false);
     };
 
-    // ---- LISTAS PARA PREGUNTAS 8 A 11 ----
     const opcionesCoagulos = [
         { id: 'No presento coágulos (Flujo líquido continuo)', title: 'Flujo líquido continuo', subtitle: 'Sin coágulos', type: 'none' },
         { id: 'Pequeños (Ocasionales, tamaño de una lenteja)', title: 'Pequeños', subtitle: 'Tamaño de una lenteja', type: 'small' },
@@ -220,7 +209,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         'Me dan en ambos momentos'
     ];
 
-    // ---- LISTAS PARA PREGUNTAS 12 A 15 ----
     const opcionesEjercicio = [
         { id: 'Alta intensidad constante (Crossfit, HIIT, correr diario)', title: 'Alta intensidad', subtitle: 'Crossfit, HIIT, correr', level: 3 },
         { id: 'Moderado / Mixto (Gimnasio, Pilates, Yoga)', title: 'Moderado / Mixto', subtitle: 'Gimnasio, Pilates, Yoga', level: 2 },
@@ -240,8 +228,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         { id: 'Insomnio (me cuesta mucho conciliar el sueño)', label: 'Insomnio', level: 1 }
     ];
 
-
-    // ---- LÓGICA PARA SELECCIÓN MÚLTIPLE (Páginas 9 y 10) ----
     const toggleMultiSelect = (field, item, isNoneOption) => {
         setOnboardingData(prev => {
             const currentList = prev[field];
@@ -264,13 +250,12 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         const d = onboardingData;
         switch (paginaActual) {
             case 1: return d.inp_age === '';
-            case 2: return d.inp_contraceptive === ''; // Aplica esta lógica a las páginas 3 a la 7 según tus variables
+            case 2: return d.inp_contraceptive === '';
             case 8: return d.inp_clots === '';
             case 9: return d.inp_diagnoses.length === 0;
             case 10: return d.inp_chronic_symptoms.length === 0;
             case 11: return d.inp_migraine_timing === '';
             case 12: return d.inp_exercise_intensity === '';
-            // El case 13 (Estrés) no se bloquea porque el switch siempre tiene un valor (true/false)
             case 14: return d.inp_digestion_pattern === '';
             case 15: return d.inp_sleep_quality === '';
             default: return false;
@@ -431,7 +416,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                         <Text style={styles.questionSubtitle}>Pensando en el último año, ¿cuántos días duró tu ciclo más corto y tu ciclo más largo?</Text>
 
                         <View style={styles.dualCounterContainer}>
-                            {/* Ciclo más corto (Rango libre 15-50) */}
                             <View style={styles.smallCounterBox}>
                                 <Text style={styles.smallCounterLabel}>Más corto</Text>
                                 <View style={styles.smallCounterControls}>
@@ -450,11 +434,7 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-
-                            {/* Divisor */}
                             <View style={styles.counterDivider} />
-
-                            {/* Ciclo más largo (Rango libre 15-50) */}
                             <View style={styles.smallCounterBox}>
                                 <Text style={styles.smallCounterLabel}>Más largo</Text>
                                 <View style={styles.smallCounterControls}>
@@ -482,8 +462,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                     <View style={styles.questionWrapper}>
                         <Text style={styles.questionTitle}>Duración del sangrado</Text>
                         <Text style={styles.questionSubtitle}>¿Cuántos días dura tu menstruación normalmente?</Text>
-
-                        {/* AHORA: Medidor de intensidad para la duración de días */}
                         <View style={styles.volumeContainer}>
                             {rangoSangrado.map((num) => {
                                 const estaIluminado = num <= onboardingData.inp_period_length;
@@ -521,8 +499,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                     <View style={styles.questionWrapper}>
                         <Text style={styles.questionTitle}>Volumen de flujo</Text>
                         <Text style={styles.questionSubtitle}>En tu día de mayor flujo, ¿cuántas toallas, tampones o copas utilizas en 24 horas?</Text>
-
-                        {/* AHORA: Cuadrícula (Grid) para elegir el número exacto */}
                         <View style={styles.gridContainer}>
                             {rangoToallas.map((dia) => {
                                 const esSeleccionado = onboardingData.inp_pads_count === dia;
@@ -546,7 +522,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                         <Text style={styles.questionTitle}>Textura del flujo</Text>
                         <Text style={styles.questionSubtitle}>Durante tu periodo, ¿cómo describirías la presencia de coágulos de sangre?</Text>
 
-                        {/* CAMBIO AQUÍ: Cambiamos View por ScrollView y agregamos padding */}
                         <ScrollView
                             style={{ width: '100%' }}
                             showsVerticalScrollIndicator={false}
@@ -616,8 +591,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                     <View style={styles.questionWrapper}>
                         <Text style={styles.questionTitle}>Síntomas Frecuentes</Text>
                         <Text style={styles.questionSubtitle}>¿Sufres habitualmente de alguno de estos síntomas a lo largo de tu ciclo?</Text>
-
-                        {/* AHORA: Usa el formato uniforme de Checkboxes de la Pág 9 */}
                         <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
                             {opcionesSintomas.map((sintoma) => {
                                 const esSeleccionado = onboardingData.inp_chronic_symptoms.includes(sintoma);
@@ -645,7 +618,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                         <Text style={styles.questionTitle}>Dolores de Cabeza</Text>
                         <Text style={styles.questionSubtitle}>Si sufres de migrañas intensas, ¿en qué momento ocurren?</Text>
 
-                        {/* AHORA: Usa el formato exacto de la Pregunta 2 */}
                         <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
                             {opcionesMigranas.map((momento) => {
                                 const esSeleccionado = onboardingData.inp_migraine_timing === momento;
@@ -668,8 +640,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                     <View style={styles.questionWrapper}>
                         <Text style={styles.questionTitle}>Actividad Física</Text>
                         <Text style={styles.questionSubtitle}>¿Cómo es tu rutina de ejercicio físico habitualmente?</Text>
-
-                        {/* Selector visual de barras de energía */}
                         <ScrollView style={{ width: '100%' }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20, gap: 10 }}>
                             {opcionesEjercicio.map((opcion) => {
                                 const esSeleccionado = onboardingData.inp_exercise_intensity === opcion.id;
@@ -701,8 +671,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                     <View style={styles.questionWrapper}>
                         <Text style={styles.questionTitle}>Nivel de Estrés</Text>
                         <Text style={styles.questionSubtitle}>¿Consideras que vives con niveles de estrés crónico o fatiga mental últimamente?</Text>
-
-                        {/* Custom Switch Elegante */}
                         <View style={styles.stressContainer}>
                             <Text style={styles.stressLabel}>{onboardingData.inp_stress_level ? 'Sí, bastante' : 'No, estoy tranquila'}</Text>
                             <TouchableOpacity
@@ -722,7 +690,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                         <Text style={styles.questionTitle}>Patrón de Digestión</Text>
                         <Text style={styles.questionSubtitle}>¿Cómo se comporta tu digestión en los días previos o durante tu periodo?</Text>
 
-                        {/* Selector igual a la pregunta 2 */}
                         <ScrollView style={styles.listPickerContainer} showsVerticalScrollIndicator={false}>
                             {opcionesDigestion.map((opcion) => {
                                 const esSeleccionado = onboardingData.inp_digestion_pattern === opcion;
@@ -746,8 +713,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                     <View style={styles.questionWrapper}>
                         <Text style={styles.questionTitle}>Calidad de Sueño</Text>
                         <Text style={styles.questionSubtitle}>¿Cómo describirías tu calidad de sueño en general?</Text>
-
-                        {/* Acomodo HORIZONTAL de 3 tarjetas */}
                         <View style={styles.sleepRowContainer}>
                             {opcionesSueno.map((opcion) => {
                                 const esSeleccionado = onboardingData.inp_sleep_quality === opcion.id;
@@ -757,7 +722,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                                         style={[styles.sleepCard, esSeleccionado && styles.sleepCardActive]}
                                         onPress={() => setOnboardingData(prev => ({ ...prev, inp_sleep_quality: opcion.id }))}
                                     >
-                                        {/* Contenedor Visual (Reemplaza el Emoji) */}
                                         <View style={styles.sleepVisualWrapper}>
                                             {opcion.level === 3 && (
                                                 <View style={styles.sleepVisualRow}>
@@ -784,7 +748,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
                                 );
                             })}
                         </View>
-                        {/* Texto descriptivo completo debajo */}
                         <Text style={styles.sleepDescriptionText}>
                             {onboardingData.inp_sleep_quality || 'Selecciona una opción'}
                         </Text>
@@ -806,15 +769,14 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
             <View style={styles.loadingScreen}>
                 <View style={styles.loadingCard}>
 
-                    {/* Escenario del Loading Animado */}
                     <View style={styles.animationContainer}>
-                        {/* Luna Creciente que brinca */}
+                        //Luna que brinca
                         <Animated.View style={[styles.moonContainer, { transform: [{ translateY: moonTranslateY }] }]}>
                             <View style={styles.moonBody} />
                             <View style={[styles.moonMask, { backgroundColor: Colors.tarjetas || '#1F1E29' }]} />
                         </Animated.View>
 
-                        {/* Sombra elíptica en el suelo que reacciona al brinco */}
+                        //sombra
                         <Animated.View style={[styles.moonShadow, { transform: [{ scaleX: shadowScale }], opacity: shadowOpacity }]} />
                     </View>
 
@@ -863,8 +825,6 @@ export default function OnboardingScreen({ navigation, onOnboardingComplete }) {
         </View>
     );
 }
-
-// ---- ESTILOS ----
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -900,7 +860,7 @@ const styles = StyleSheet.create({
     questionTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, fontFamily: FONT_BOLD },
     questionSubtitle: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, textAlign: 'center', lineHeight: 18, paddingHorizontal: 10, marginBottom: 16 },
 
-    // Pág 1: Edad
+    // Pág 1
     pickerContainer: { width: '100%', height: 70, justifyContent: 'center', alignItems: 'center' },
     ageScrollContent: { paddingHorizontal: width / 2 - 58, alignItems: 'center' },
     ageItem: { width: 54, height: 54, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.15)', justifyContent: 'center', alignItems: 'center', marginHorizontal: 7 },
@@ -908,7 +868,7 @@ const styles = StyleSheet.create({
     ageText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600', opacity: 0.7, fontFamily: FONT_REGULAR },
     ageTextActive: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', opacity: 1.0, fontFamily: FONT_BOLD },
 
-    // Pág 2: List Picker
+    // Pág 2
     listPickerContainer: { width: '100%', flex: 1 },
     optionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
     optionRowActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD' },
@@ -916,7 +876,7 @@ const styles = StyleSheet.create({
     optionTextActive: { color: '#FFFFFF', fontWeight: '600', fontFamily: FONT_REGULAR },
     radioCheck: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.botones || '#6A5ACD' },
 
-    // Pág 3: Calendario
+    // Pág 3
     calendarCard: { width: '100%', alignItems: 'center', marginTop: 10 },
     dateDisplay: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', fontFamily: FONT_BOLD, backgroundColor: 'rgba(255, 255, 255, 0.06)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, marginBottom: 10, overflow: 'hidden' },
     dateDisplayButtonAndroid: { backgroundColor: 'rgba(255, 255, 255, 0.06)', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)', marginTop: 20 },
@@ -944,7 +904,7 @@ const styles = StyleSheet.create({
     modalCancelText: { color: 'white', fontWeight: '700', fontFamily: FONT_REGULAR },
     modalSaveText: { color: '#0D0D1E', fontWeight: '800', fontFamily: FONT_BOLD },
 
-    // Pág 4: Counter UI
+    // Pág 4
     counterContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: 20 },
     counterButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255, 255, 255, 0.06)', justifyContent: 'center', alignItems: 'center' },
     counterButtonText: { color: '#FFFFFF', fontSize: 24, fontWeight: '300', fontFamily: FONT_REGULAR },
@@ -952,7 +912,7 @@ const styles = StyleSheet.create({
     counterValue: { color: '#FFFFFF', fontSize: 48, fontWeight: 'bold', fontFamily: FONT_BOLD },
     counterUnit: { color: 'rgba(255, 255, 255, 0.5)', fontSize: 14, marginTop: -4 },
 
-    // Pág 5: Dual Counter
+    // Pág 5
     dualCounterContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: 10, paddingHorizontal: 10 },
     smallCounterBox: { flex: 1, alignItems: 'center' },
     smallCounterLabel: { color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, marginBottom: 12 },
@@ -962,7 +922,6 @@ const styles = StyleSheet.create({
     smallCounterValue: { color: '#FFFFFF', fontSize: 28, fontWeight: 'bold', marginHorizontal: 15, width: 35, textAlign: 'center', fontFamily: FONT_BOLD },
     counterDivider: { width: 1, height: 60, backgroundColor: 'rgba(255, 255, 255, 0.1)', marginHorizontal: 10, marginTop: 20 },
 
-    // Cuadrícula (ahora para Volumen)
     gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', width: '100%', gap: 10, marginTop: 5 },
     gridItem: { width: 45, height: 45, borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.04)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
     gridItemActive: { backgroundColor: Colors.botones || '#6A5ACD', borderColor: Colors.botones || '#6A5ACD' },
@@ -970,7 +929,6 @@ const styles = StyleSheet.create({
     gridItemTextActive: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', fontFamily: FONT_BOLD },
     gridFooterText: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 13, marginTop: 16 },
 
-    // Medidor de intensidad (ahora para Duración de días)
     volumeContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', width: '90%', gap: 8, marginTop: 5 },
     volumeItem: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255, 255, 255, 0.04)', justifyContent: 'center', alignItems: 'center' },
     volumeItemActive: { backgroundColor: 'rgba(106, 90, 205, 0.3)' },
@@ -987,7 +945,7 @@ const styles = StyleSheet.create({
     loadingContainer: { flex: 1, backgroundColor: Colors.fondo || '#12111A', justifyContent: 'center', alignItems: 'center' },
     loadingText: { color: '#FFFFFF', fontSize: 15, marginTop: 16, textAlign: 'center', paddingHorizontal: 40 },
 
-    // Pág 8: Coágulos (Tarjetas Visuales)
+    // Pág 8
     clotsContainer: { width: '100%', gap: 10 },
     clotCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' },
     clotCardActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD' },
@@ -1001,7 +959,7 @@ const styles = StyleSheet.create({
     clotDotSmall: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.botones || '#6A5ACD' },
     clotDotLarge: { width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.botones || '#6A5ACD' },
 
-    // Pág 9: Checkboxes (Diagnósticos)
+    // Pág 9
     checkboxRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, marginBottom: 8, borderWidth: 1, borderColor: 'transparent' },
     checkboxRowActive: { backgroundColor: 'rgba(106, 90, 205, 0.1)', borderColor: 'rgba(106, 90, 205, 0.5)' },
     checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.3)', marginRight: 12, justifyContent: 'center', alignItems: 'center' },
@@ -1010,7 +968,7 @@ const styles = StyleSheet.create({
     checkboxText: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14, flex: 1 },
     checkboxTextActive: { color: '#FFFFFF', fontWeight: '600', fontFamily: FONT_REGULAR },
 
-    // Pág 12: Ejercicio (Tarjetas Visuales de Energía)
+    // Pág 12
     exerciseCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'transparent' },
     exerciseCardActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD' },
     exerciseVisualContainer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', width: 35, height: 35, marginRight: 16, paddingBottom: 2 },
@@ -1021,7 +979,7 @@ const styles = StyleSheet.create({
     exerciseTitleActive: { color: '#FFFFFF' },
     exerciseSubtitle: { color: 'rgba(255, 255, 255, 0.5)', fontSize: 12 },
 
-    // Pág 13: Estrés (Custom Switch)
+    // Pág 13
     stressContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
     stressLabel: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', marginBottom: 30, fontFamily: FONT_BOLD },
     customSwitch: { width: 100, height: 50, borderRadius: 25, padding: 4, justifyContent: 'center' },
@@ -1031,7 +989,7 @@ const styles = StyleSheet.create({
     switchCircleOff: { alignSelf: 'flex-start' },
     switchCircleOn: { alignSelf: 'flex-end' },
 
-    // Pág 15: Sueño (Tarjetas Horizontales con Lunas/Estrellas)
+    // Pág 15
     sleepRowContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 10 },
     sleepCard: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 20, paddingVertical: 20, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: 'transparent' },
     sleepCardActive: { backgroundColor: 'rgba(106, 90, 205, 0.15)', borderColor: Colors.botones || '#6A5ACD', transform: [{ scale: 1.05 }] },
@@ -1039,7 +997,7 @@ const styles = StyleSheet.create({
     sleepVisualWrapper: { height: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
     sleepVisualRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap', justifyContent: 'center', width: 40 },
 
-    // Figuras geométricas simples y a prueba de errores
+    // Figuras para sueño
     moonFull: { width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.botones || '#6A5ACD' },
     moonHalf: { width: 14, height: 14, borderBottomLeftRadius: 14, borderTopLeftRadius: 14, backgroundColor: Colors.botones || '#6A5ACD' },
     moonCrescent: { width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: Colors.botones || '#6A5ACD', borderTopColor: 'transparent', borderRightColor: 'transparent', transform: [{ rotate: '-45deg' }] },
@@ -1049,20 +1007,20 @@ const styles = StyleSheet.create({
     sleepLabelActive: { color: '#FFFFFF', fontWeight: 'bold', fontFamily: FONT_BOLD },
     sleepDescriptionText: { color: Colors.botones || '#6A5ACD', fontSize: 14, textAlign: 'center', marginTop: 24, paddingHorizontal: 10, fontWeight: '500', fontFamily: FONT_REGULAR },
 
-    // --- ESTILOS PANTALLA DE CARGA FINAL (LUNA BRINCANDO) ---
+    // loading
     loadingScreen: { flex: 1, backgroundColor: Colors.fondo || '#12111A', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
     loadingCard: { backgroundColor: Colors.tarjetas || '#1F1E29', borderRadius: 28, width: '100%', paddingVertical: 50, paddingHorizontal: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
     loadingTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, fontFamily: FONT_BOLD },
     loadingSubtitle: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 14, textAlign: 'center', height: 40 },
 
-    // Contenedor que fija el espacio para que el brinco no mueva los textos de abajo
+    // Contenedor fijo
     animationContainer: { height: 90, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 24, width: 100, position: 'relative' },
 
-    // Construcción vectorial de la Luna Creciente
+    // Construcción de la luna
     moonContainer: { width: 40, height: 40, position: 'relative', marginBottom: 4 },
     moonBody: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.botones || '#6A5ACD' },
-    moonMask: { width: 40, height: 40, borderRadius: 20, position: 'absolute', top: -5, left: 7 }, // Hace el recorte perfecto de la fase
+    moonMask: { width: 40, height: 40, borderRadius: 20, position: 'absolute', top: -5, left: 7 },
 
-    // Sombra ovalada idéntica a la de tu referencia
+    // Sombra 
     moonShadow: { width: 30, height: 5, borderRadius: 2.5, backgroundColor: '#000000' }
 });

@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
-import {View,Text,StyleSheet,TouchableOpacity,Image,TextInput,Alert,ScrollView,ActivityIndicator} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-// Importamos tus herramientas globales
 import { Colors } from '../../styles/colors';
 import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import { useAuth } from '../../hooks/useAuth';
-import { signUp } from '../../services/authService'; // <--- Tu servicio profesional
+import { signUp } from '../../services/authService';
 
-/**
- * SignUpScreen:
- * Esta es la "cara" del registro. No procesa datos, solo los recolecta
- * y los envía al authService para que él haga el trabajo sucio.
- */
 export default function SignUpScreen({ navigation }) {
-    // 1. Estados para capturar lo que la usuaria escribe
     const { loginConGoogle, isReady } = useAuth();
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
@@ -24,13 +16,12 @@ export default function SignUpScreen({ navigation }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    // 2. Lógica para Registro con Google
+    // Registro con Google
     const handleGooglePress = async () => {
         setLoading(true);
         const resultado = await loginConGoogle();
 
         if (resultado.error) {
-            // Si hubo un error real (no cancelación), avisamos.
             if (resultado.error !== "Inicio de sesión cancelado") {
                 Alert.alert("Error con Google", resultado.error);
             }
@@ -39,9 +30,9 @@ export default function SignUpScreen({ navigation }) {
         setLoading(false);
     };
 
-    // 3. Lógica para Registro con Email/Password (Usando tu servicio)
+    // Registro con Email/Password 
     const handleSignup = async () => {
-        // A. Validaciones de UI (Antes de molestar al servidor)
+        // Validaciones de UI 
         if (!email || !username || !password || !confirmPassword) {
             Alert.alert('Error', 'Por favor completa todos los campos');
             return;
@@ -57,15 +48,15 @@ export default function SignUpScreen({ navigation }) {
 
         setLoading(true);
 
-        // B. Llamada al Servicio (La "Magia")
-        // Le pasamos los datos y esperamos la respuesta limpia que programamos en authService.
+        // Llamada al Servicio
+        // Le pasamos los datos y esperamos la respuesta
         const respuesta = await signUp(email, password, username);
 
         if (respuesta.success) {
             Alert.alert('¡Bienvenida a Bloom!', `Tu cuenta ha sido creada, ${username}.`);
-            // No navegamos manualmente; RootNavigator nos llevará al Home automáticamente.
+            // RootNavigator nos llevará al Home automáticamente.
         } else {
-            // Aquí se muestra el error ya traducido por tu función "traducirError"
+            // error traducido
             Alert.alert('Error de Registro', respuesta.error);
         }
 
@@ -74,7 +65,6 @@ export default function SignUpScreen({ navigation }) {
 
     return (
         <ScrollView contentContainerStyle={styles.container} bounces={false}>
-            {/* Elementos visuales de fondo */}
             <Image
                 source={require('../../../assets/images/CircleLayer.png')}
                 style={styles.blurBackground}
@@ -88,7 +78,6 @@ export default function SignUpScreen({ navigation }) {
             <Text style={styles.title}>Crea tu cuenta</Text>
             <Text style={styles.text}>Comienza tu camino al equilibrio</Text>
 
-            {/* Formulario de Entrada */}
             <TextInput
                 placeholder="Correo electrónico"
                 style={styles.input}
@@ -134,7 +123,6 @@ export default function SignUpScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
-            {/* Botón de Google */}
             <TouchableOpacity
                 style={styles.googleButton}
                 onPress={handleGooglePress}
@@ -148,7 +136,6 @@ export default function SignUpScreen({ navigation }) {
                 <Text style={styles.googleButtonText}>Registrarse con Google</Text>
             </TouchableOpacity>
 
-            {/* Enlace para volver al Login */}
             <TouchableOpacity
                 onPress={() => navigation.navigate('Login')}
                 style={styles.linkContainer}
@@ -158,7 +145,6 @@ export default function SignUpScreen({ navigation }) {
                 </Text>
             </TouchableOpacity>
 
-            {/* Botón de Registro Principal */}
             <TouchableOpacity
                 style={styles.signupButton}
                 onPress={handleSignup}

@@ -101,8 +101,6 @@ export default function TipsScreen({ navigation }) {
                 source={require('../../../assets/images/CircleLayer.png')}
                 style={styles.blurBackground}
             />
-
-            {/* 1. LOGO CENTRADO (Revertido a posición original) */}
             <View style={styles.headerBloomCentered}>
                 <Image
                     source={require('../../../assets/icons/Group_35.png')}
@@ -114,7 +112,6 @@ export default function TipsScreen({ navigation }) {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
 
-                    {/* 2. FRASE DE DOS NIVELES CENTRADA */}
                     <View style={styles.phraseContainerCentered}>
                         <Text style={styles.preTitleCentered}>Hoy es un buen día para...</Text>
                         <Text style={styles.mainTitleCentered}>
@@ -122,7 +119,6 @@ export default function TipsScreen({ navigation }) {
                         </Text>
                     </View>
 
-                    {/* GRID DE TARJETAS */}
                     <View style={styles.gridContainer}>
 
                         {alertasActivas.length > 0 && (
@@ -131,7 +127,6 @@ export default function TipsScreen({ navigation }) {
                                 onPress={() => setModalVisible('alertas')}
                                 activeOpacity={0.8}
                             >
-                                {/* 🌟 AJUSTE: NUEVO COMPONENTE ABSTRACTO (TRIÁNGULO DE ALERTA) */}
                                 <View style={styles.abstractVisualTriangle}>
                                     <View style={[styles.triangleShape, { borderBottomColor: themeColor }]} />
                                 </View>
@@ -187,7 +182,6 @@ export default function TipsScreen({ navigation }) {
                 </View>
             </ScrollView>
 
-            {/* MODAL (Se mantiene igual de diseño) */}
             <Modal animationType="fade" transparent={true} visible={modalVisible !== null} onRequestClose={() => setModalVisible(null)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalSheet}>
@@ -294,17 +288,13 @@ const styles = StyleSheet.create({
         height: 280,
         zIndex: -1,
     },
-
-    // ============================================
-    // 🌟 ESTILOS CABECERA CENTRADA (LOGO + FRASE)
-    // ============================================
     headerBloomCentered: {
         alignItems: 'center',
         paddingTop: 25,
         paddingBottom: 10,
     },
     logoHeaderCentered: {
-        width: 140, // Tamaño balanceado
+        width: 140,
         height: 40,
     },
     phraseContainerCentered: {
@@ -327,18 +317,12 @@ const styles = StyleSheet.create({
         lineHeight: 28,
     },
 
-    // ESTILOS GRID Y TARJETAS NEUTRAS
     gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
     fullWidthCard: { width: '100%', height: 85, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', marginBottom: 4 },
     squareCard: { width: '47.5%', aspectRatio: 1, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' },
     cardInnerCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     cardText: { fontFamily: FONT_BOLD, fontSize: 12, letterSpacing: 1.5, textAlign: 'center', color: '#FFFFFF' },
 
-    // ============================================
-    // 🎨 COMPONENTES ABSTRACTOS RENOVADOS
-    // ============================================
-
-    // 🌟 NUEVO: TRIÁNGULO GEOMÉTRICO (Adiós puntos)
     abstractVisualTriangle: {
         width: 0,
         height: 0,
@@ -349,13 +333,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 26,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        // borderBottomColor se define dinámicamente en el JSX
-        marginRight: 15, // Separación con el texto
+        marginRight: 15,
     },
     // Estilo base para el JSX
     triangleShape: {
         position: 'absolute',
-        top: -13, // Ajuste para centrarlo visualmente en la fila
+        top: -13,
         left: -15,
         width: 0,
         height: 0,
@@ -368,7 +351,6 @@ const styles = StyleSheet.create({
         borderRightColor: 'transparent',
     },
 
-    // Resto de visuales abstractos (se mantienen)
     abstractVisual: { marginBottom: 16, height: 26, justifyContent: 'center', alignItems: 'center' },
     circleShape: { width: 26, height: 26, borderRadius: 13 },
     ringShape: { width: 26, height: 26, borderRadius: 13, borderWidth: 2.5 },
@@ -378,7 +360,6 @@ const styles = StyleSheet.create({
     gridBlock: { width: 11, height: 11, borderRadius: 3 },
     gridBlockOutline: { width: 11, height: 11, borderRadius: 3, borderWidth: 2, backgroundColor: 'transparent' },
 
-    // ESTILOS MODAL (Sin cambios)
     modalOverlay: { flex: 1, backgroundColor: 'rgba(10, 10, 15, 0.94)', justifyContent: 'flex-end' },
     modalSheet: { backgroundColor: '#151522', borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', paddingHorizontal: 24, paddingTop: 55, paddingBottom: 40, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.04)' },
     closeButton: { position: 'absolute', top: 20, right: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 8, borderRadius: 20, zIndex: 10 },

@@ -18,21 +18,20 @@ export default function ForgotPasswordScreen() {
         }
 
         setLoading(true);
-        
+
         // Llamamos a la función del servicio
         const resultado = await resetPassword(email);
-        
+
         setLoading(false);
 
         if (resultado.success) {
-            // Usamos la alerta con el botón de "OK" para regresar al Login
             Alert.alert(
-                "¡Correo enviado!", 
+                "¡Correo enviado!",
                 "Revisa tu bandeja de entrada para restablecer tu contraseña.",
                 [{ text: "OK", onPress: () => navigation.goBack() }] // Regresa al Login automáticamente
             );
         } else {
-            // Aquí se muestra el error traducido (ej: "Usuario no encontrado")
+            // Aquí se muestra el error traducido
             Alert.alert("Error", resultado.error || 'Ocurrió un error al solicitar el restablecimiento');
         }
     };
@@ -43,7 +42,6 @@ export default function ForgotPasswordScreen() {
                 <Text style={styles.backButtonText}>Regresar</Text>
             </TouchableOpacity>
 
-            {/* Fondo y Logo mantenidos */}
             <Image
                 source={require('../../../assets/images/CircleLayer.png')}
                 style={styles.blurBackground}
@@ -55,11 +53,11 @@ export default function ForgotPasswordScreen() {
             />
 
             <Text style={styles.title}>¿Olvidaste tu contraseña?</Text>
-            
+
             <Text style={styles.subtitle}>
                 No te preocupes, te ayudamos a recuperarla.
             </Text>
-            
+
             <Text style={styles.subtitle}>
                 Ingresa tu correo electrónico, teléfono o nombre de usuario y te enviaremos un enlace para que recuperes el acceso a tu cuenta.
             </Text>
@@ -74,10 +72,9 @@ export default function ForgotPasswordScreen() {
                 autoCapitalize="none"
             />
 
-            {/* El botón mantiene tus estilos originales */}
-            <TouchableOpacity 
-                style={styles.button} 
-                onPress={handleForgotPassword} 
+            <TouchableOpacity
+                style={styles.button}
+                onPress={handleForgotPassword}
                 disabled={loading}
             >
                 {loading ? (

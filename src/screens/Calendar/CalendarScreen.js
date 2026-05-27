@@ -9,7 +9,7 @@ import {
     ActivityIndicator,
     Alert,
     Image,
-    Modal // 🌟 Agregado el Modal de react-native
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
@@ -60,7 +60,6 @@ export default function CalendarScreen() {
     const [currentMonth, setCurrentMonth] = useState(dayjs());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
-    // 🌟 Estados clave integrados
     const [selectedPeriodDate, setSelectedPeriodDate] = useState(dayjs().toDate());
     const [dailyTracking, setDailyTracking] = useState({});
 
@@ -124,13 +123,12 @@ export default function CalendarScreen() {
     const handlePrevMonth = () => setCurrentMonth(currentMonth.subtract(1, 'month'));
     const handleNextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
 
-    // Manejo de apertura del nuevo Modal estilo tu amiga
     const handleEditPeriod = () => {
         setSelectedPeriodDate(currentMonth.toDate() > new Date() ? new Date() : currentMonth.toDate());
         setShowDatePicker(true);
     };
 
-    // Nueva función para procesar y guardar la fecha seleccionada en el Modal
+    // Procesa y guarda la fecha seleccionada
     const handleSavePeriodDate = async () => {
         setShowDatePicker(false);
         if (!selectedPeriodDate) return;
@@ -218,7 +216,6 @@ export default function CalendarScreen() {
                 />
             </View>
 
-            {/* NUEVO MODAL CROSS-PLATFORM INTEGRADO CORRECTAMENTE */}
             <Modal
                 visible={showDatePicker}
                 transparent
@@ -232,9 +229,8 @@ export default function CalendarScreen() {
                             current={dayjs(selectedPeriodDate).format('YYYY-MM-DD')}
                             maxDate={dayjs().format('YYYY-MM-DD')}
                             onDayPress={(day) => {
-                                // Dayjs lee 'YYYY-MM-DD' y lo asigna directo a tu zona local de forma segura
                                 setSelectedPeriodDate(dayjs(day.dateString).toDate());
-}}
+                            }}
                             markedDates={{
                                 [dayjs(selectedPeriodDate).format('YYYY-MM-DD')]: {
                                     selected: true,
@@ -638,7 +634,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 
-    // 🌟 ESTILOS AGREGADOS PARA EL MODAL DEL CALENDARIO
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',

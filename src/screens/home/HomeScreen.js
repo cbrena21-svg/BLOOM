@@ -22,7 +22,7 @@ export default function HomeScreen() {
     const [userProfile, setUserProfile] = useState(null);
     const [phaseKey, setPhaseKey] = useState('menstrual');
 
-const parseDate = (value) => {
+    const parseDate = (value) => {
         if (!value) return null;
         if (typeof value.toDate === 'function') return value.toDate();
         if (value.seconds) return new Date(value.seconds * 1000);
@@ -37,7 +37,9 @@ const parseDate = (value) => {
 
         const history = Array.isArray(profile.periods_history) ? profile.periods_history : [];
         if (history.length > 0) {
-            const lastHistoryItem = history[history.length - 1];
+            // ✨ SOLUCIÓN: Ordenamos cronológicamente antes de tomar el último registro
+            const sortedHistory = [...history].sort((a, b) => dayjs(a.startDate).diff(dayjs(b.startDate)));
+            const lastHistoryItem = sortedHistory[sortedHistory.length - 1];
             return parseDate(lastHistoryItem?.startDate);
         }
 
@@ -45,26 +47,30 @@ const parseDate = (value) => {
     };
 
     const recalculateCycleDay = useCallback((profile) => {
-        const length = Number(profile?.avg_cycle_length || profile?.inp_cycle_length || 28) || 28;
-
-        setCycleLength(length);
-
         if (!profile) {
+            setCycleLength(28);
             setDay(1);
             setPhaseKey('menstrual');
             return;
         }
 
-        // Usamos el inicio del día para evitar desfases por zonas horarias
+        // Obtenemos los días calculados por el motor del calendario
         const monthDays = getMonthWithPhases(dayjs().startOf('day'), profile);
         const todayEntry = monthDays.find((item) => item?.isToday);
 
         if (todayEntry?.cycleDay) {
             setDay(todayEntry.cycleDay);
             setPhaseKey(todayEntry.phase || 'menstrual');
+
+            // ✨ SOLUCIÓN: Usamos la duración exacta que calculó el calendario para hoy
+            const dynamicLength = todayEntry.cycleLength || Number(profile?.avg_cycle_length || profile?.inp_cycle_length || 28);
+            setCycleLength(dynamicLength);
             return;
         }
 
+        // Fallback en caso de que no se encuentre el día de hoy
+        const length = Number(profile?.avg_cycle_length || profile?.inp_cycle_length || 28) || 28;
+        setCycleLength(length);
         const fallbackPhase = getPhaseForDay(1, profile, length) || 'menstrual';
         setDay(1);
         setPhaseKey(fallbackPhase);

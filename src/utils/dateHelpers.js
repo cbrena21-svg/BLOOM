@@ -170,6 +170,7 @@ export const getMonthWithPhases = (date, userProfile) => {
             isToday: isToday,
             isOvulationDay: isOvulationDay,
             isPrediction: isPrediction,
+            cycleLength: currentCycleLength,
         });
     }
     return days;

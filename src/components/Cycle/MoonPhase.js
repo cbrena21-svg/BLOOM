@@ -3,20 +3,18 @@ import { View, StyleSheet, Animated, Easing } from 'react-native';
 
 export default function MoonPhase({ phase, mirror = false, invertSilhouette = false, debug = false }) {
     const transition = useRef(new Animated.Value(1)).current;
-    
+
     // Si no recibe nada, por defecto mostrará la luna llena
     const [displayPhase, setDisplayPhase] = useState(phase || 'ovulatory');
     const [previousPhase, setPreviousPhase] = useState(phase || 'ovulatory');
 
     // Mapeo inteligente: Conecta el estado del ciclo con la sombra lunar correspondiente
     const phaseMap = {
-        // --- FASES DEL CICLO MENSTRUAL MODIFICADAS ---
         menstrual: { shadowStyle: styles.shadowQuarterWaning },      // UPDATED: Media-luna que cierra hacia la derecha (iluminada a la derecha)
         follicular: { shadowStyle: styles.shadowWaxingGibbous },     // UPDATED: Giba Creciente (Más iluminada que Menstrual)
         ovulatory: { shadowStyle: styles.shadowNone },               // Luna Llena (Iluminada)
         luteal: { shadowStyle: styles.shadowCrescentWaning },        // Luna Menguante Delgado - Izq lit, derecha shadow
 
-        // --- RESPALDOS DE FASES LUNARES ESTÁNDAR ---
         new_moon: { shadowStyle: styles.shadowFull },
         crescent: { shadowStyle: styles.shadowCrescentWaxing },
         half: { shadowStyle: styles.shadowQuarterWaxing },
@@ -44,7 +42,6 @@ export default function MoonPhase({ phase, mirror = false, invertSilhouette = fa
         setDisplayPhase(nextPhase);
         transition.setValue(0);
 
-        // --- ANIMACIÓN MÁS SUAVE ---
         Animated.timing(transition, {
             toValue: 1,
             duration: 1200, // Aumentado de 520ms a 1200ms para una transición más smooth
@@ -65,7 +62,7 @@ export default function MoonPhase({ phase, mirror = false, invertSilhouette = fa
         inputRange: [0, 1],
         outputRange: [1, 0],
     });
-    
+
     // Latido sutil al cambiar de fase
     const moonScale = transition.interpolate({
         inputRange: [0, 0.5, 1],

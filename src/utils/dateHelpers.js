@@ -1,9 +1,4 @@
 import dayjs from 'dayjs';
-
-/**
- * CALC_01 a CALC_04: Motor de Predicción Matemática Definitivo de Bloom
- * Ahora acepta una duración de ciclo dinámica (dynamicCycleLength)
- */
 export const getPhaseForDay = (cycleDay, userProfile, dynamicCycleLength = null) => {
     if (!userProfile) return null;
 
@@ -69,9 +64,6 @@ export const getCycleDayForDate = (date, lastPeriodDate, cycleLength = 28) => {
     return ((((diffDays % cycleLength) + cycleLength) % cycleLength) + 1);
 };
 
-/**
- * 🌟 REGLA DEL HISTORIAL VS PREDICCIÓN GLOBAL
- */
 export const getMonthWithPhases = (date, userProfile) => {
     if (!userProfile) return [];
 
@@ -120,7 +112,7 @@ export const getMonthWithPhases = (date, userProfile) => {
             }
         }
 
-        // 🔮 REGLA 2: Si no hay registro real para este día, calculamos predicciones
+        // Si no hay registro real para este día, calculamos predicciones
         if (!insideHistoryRange) {
             let anchorStartDate = null;
 
@@ -154,7 +146,6 @@ export const getMonthWithPhases = (date, userProfile) => {
             assignedPhase = getPhaseForDay(calculatedCycleDay, userProfile, currentCycleLength);
         }
 
-        // ⚡ Ahora esta lectura es 100% segura y no arrojará ReferenceError
         let diaOvulacionExacto = currentCycleLength - 14;
         if (profile === 'NATURAL' && age >= 40 && age <= 44) diaOvulacionExacto = M + 10.4;
         else if (profile === 'TRANSITION' || age >= 45) diaOvulacionExacto = M + 8.3;

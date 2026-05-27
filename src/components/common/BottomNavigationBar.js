@@ -72,7 +72,6 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
         elevation: 12,
     },
-    // cuadro de selección para íconos secundarios
     navItem: {
         width: 60,
         height: 55,
@@ -102,7 +101,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.18)',
     },
-    // Estilo para el cuadro de selección en los íconos secundarios 16
     selectedBox: {
         ...StyleSheet.absoluteFillObject,
         borderRadius: 30,

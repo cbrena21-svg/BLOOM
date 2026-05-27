@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { onAuthStateChanged } from 'firebase/auth';
-// 1. Importamos las herramientas nativas de Firestore
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebaseConfig';
 import { getOnboardingProfile } from '../services/storageService';
 
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
-// 2. Corregimos/Aseguramos la importación de tu Onboarding
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 
 import { Colors } from '../styles/colors';
@@ -23,8 +21,6 @@ export default function RootNavigator() {
         const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
             try {
                 if (authenticatedUser) {
-                    // 🌟 CONSULTA REAL A FIRESTORE:
-                    // Buscamos el cajón con el ID único del usuario (uid)
                     const docRef = doc(db, "users", authenticatedUser.uid);
                     const docSnap = await getDoc(docRef);
 
@@ -84,7 +80,6 @@ export default function RootNavigator() {
         <NavigationContainer>
             {user ? (
                 firstTime ? (
-                    // ✅ Le pasamos la función para que el Onboarding pueda avisarle al RootNavigator
                     <OnboardingScreen
                         key={`onboarding-${user.uid}`}
                         onOnboardingComplete={() => setFirstTime(false)}

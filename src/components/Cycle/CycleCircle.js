@@ -13,7 +13,6 @@ const CIRCLE_STROKE = 15;
 const TRACK_RADIUS = RADIUS - CIRCLE_STROKE / 2;
 const DOT_RADIUS = TRACK_RADIUS - 18; // Distancia de los puntitos hacia el centro
 
-// --- CONFIGURACIÓN DEL HUECO ---
 const GAP_ANGLE = 35;
 const ARC_START_ANGLE = GAP_ANGLE / 2;
 const ARC_SWEEP_ANGLE = 360 - GAP_ANGLE;
@@ -57,7 +56,7 @@ export default function CycleCircle({
         for (let i = 1; i <= totalDays; i++) {
             const dotAngle = normalizeDayToAngle(i);
             const dotRadians = (dotAngle - 90) * (Math.PI / 180);
-            
+
             // Coordenadas X e Y exactas para cada puntito
             const cx = RADIUS + DOT_RADIUS * Math.cos(dotRadians);
             const cy = RADIUS + DOT_RADIUS * Math.sin(dotRadians);
@@ -68,7 +67,7 @@ export default function CycleCircle({
                     cx={cx}
                     cy={cy}
                     r={2.5}
-                    fill="rgba(255, 255, 255, 0.35)" // Blanco semitransparente como en Figma
+                    fill="rgba(255, 255, 255, 0.35)"
                 />
             );
         }
@@ -124,10 +123,9 @@ export default function CycleCircle({
             {...panResponder.panHandlers}
             onLayout={updateCircleCenter}
         >
-            {/* 1. TRAZO PRINCIPAL ROTADO (El contorno con color y hueco) */}
-            <Svg 
-                width={SIZE} 
-                height={SIZE} 
+            <Svg
+                width={SIZE}
+                height={SIZE}
                 style={[styles.svgAbsolute, { transform: [{ rotate: `${svgRotation}deg` }] }]}
             >
                 <Circle
@@ -141,17 +139,14 @@ export default function CycleCircle({
                     strokeLinecap="round"
                 />
             </Svg>
-
-            {/* 2. CAPA DE PUNTITOS INTERNOS (Sin rotar para coincidir con la matemática XY) */}
-            <Svg 
-                width={SIZE} 
-                height={SIZE} 
+            <Svg
+                width={SIZE}
+                height={SIZE}
                 style={styles.svgAbsolute}
             >
                 {renderDayDots()}
             </Svg>
 
-            {/* 3. INDICADOR DEL DÍA MÓVIL */}
             <View
                 style={[
                     styles.indicator,

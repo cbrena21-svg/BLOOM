@@ -1,29 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import dayjs from 'dayjs';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../styles/colors';
 import { FONT_BOLD, FONT_REGULAR } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
-import { auth } from '../../services/firebaseConfig';
+import { auth, obtenerPerfilUsuario } from '../../services/firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getOnboardingProfile } from '../../services/storageService';
-import { logout } from '../../services/authService';
+import { logout, deleteAccount } from '../../services/authService';
 
 export default function ProfileScreen() {
     const [profile, setProfile] = useState(null);
     const [emailRevealed, setEmailRevealed] = useState(false);
+    const [chronicSymptomsVisible, setChronicSymptomsVisible] = useState(false);
+
+    const loadProfile = useCallback(async (userId) => {
+        let localProfile = null;
+
+        const localResult = await getOnboardingProfile(userId);
+        if (localResult.success && localResult.data) {
+            localProfile = localResult.data;
+        }
+
+        const remoteResult = await obtenerPerfilUsuario();
+        if (remoteResult.success && remoteResult.data) {
+            // Firebase tiene prioridad para reflejar cambios recientes hechos en Calendar.
+            setProfile({ ...(localProfile || {}), ...remoteResult.data });
+            return;
+        }
+
+        if (localProfile) {
+            setProfile(localProfile);
+        }
+    }, []);
 
     useEffect(() => {
         let unsub = null;
-
-        const loadProfile = async (userId) => {
-                const result = await getOnboardingProfile(userId);
-                if (result.success && result.data) {
-                    setProfile(result.data);
-                }
-            };
 
         if (auth.currentUser && auth.currentUser.uid) {
             loadProfile(auth.currentUser.uid);
@@ -38,7 +53,15 @@ export default function ProfileScreen() {
         return () => {
             if (unsub) unsub();
         };
-    }, []);
+    }, [loadProfile]);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (auth.currentUser?.uid) {
+                loadProfile(auth.currentUser.uid);
+            }
+        }, [loadProfile]),
+    );
 
     const handleLogout = async () => {
         const result = await logout();
@@ -46,6 +69,41 @@ export default function ProfileScreen() {
             Alert.alert('Error', result.error || 'No se pudo cerrar la sesión');
             return;
         }
+    };
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Eliminar cuenta',
+            'Esta acción eliminará tu cuenta y no se puede deshacer. ¿Deseas continuar?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: () => {
+                        Alert.alert(
+                            'Confirmación final',
+                            'Se borrarán todos tus datos asociados a esta cuenta.',
+                            [
+                                { text: 'Cancelar', style: 'cancel' },
+                                {
+                                    text: 'Sí, eliminar',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        const result = await deleteAccount();
+                                        if (!result.success) {
+                                            Alert.alert('Error', result.error || 'No se pudo eliminar la cuenta');
+                                            return;
+                                        }
+                                        Alert.alert('Cuenta eliminada', 'Tu cuenta fue eliminada correctamente.');
+                                    }
+                                }
+                            ]
+                        );
+                    }
+                }
+            ]
+        );
     };
 
     const formatRegularity = value => {
@@ -102,6 +160,7 @@ export default function ProfileScreen() {
     const formatPads = () => (profile?.inp_pads_count !== undefined ? String(profile.inp_pads_count) : 'No especificado');
     const formatClots = () => (profile?.inp_clots || 'No especificado');
     const formatStress = () => (profile?.inp_stress_level ? 'Sí' : 'No');
+    const chronicSymptomsText = joinList(profile?.inp_chronic_symptoms);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -205,8 +264,20 @@ export default function ProfileScreen() {
                                 <View style={styles.divider} />
                                 <View style={styles.infoBlock}>
                                     <Text style={styles.label}>Síntomas crónicos</Text>
-                                    <Text style={styles.value}>{joinList(profile.inp_chronic_symptoms)}</Text>
+                                    {chronicSymptomsText !== 'Ninguno' ? (
+                                        <TouchableOpacity onPress={() => setChronicSymptomsVisible(prev => !prev)} activeOpacity={0.8}>
+                                            <Text style={styles.showMoreBtn}>{chronicSymptomsVisible ? 'Cerrar' : 'Mostrar'}</Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Text style={styles.value}>Ninguno</Text>
+                                    )}
                                 </View>
+
+                                {chronicSymptomsVisible && chronicSymptomsText !== 'Ninguno' ? (
+                                    <View style={styles.symptomsBanner}>
+                                        <Text style={styles.symptomsBannerText}>{chronicSymptomsText}</Text>
+                                    </View>
+                                ) : null}
 
                                 <View style={styles.divider} />
                                 <View style={styles.infoBlock}>
@@ -224,6 +295,11 @@ export default function ProfileScreen() {
                     ) : (
                         <Text style={styles.message}>Aún no hay datos de ciclo guardados.</Text>
                     )}
+
+                    <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount} activeOpacity={0.85}>
+                        <Ionicons name="trash-outline" size={20} color={Colors.textoPrincipal} />
+                        <Text style={styles.deleteAccountText}>Eliminar cuenta</Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
             
@@ -302,6 +378,30 @@ infoBlock: {
         flexDirection: 'row',
         alignItems: 'center',
     },
+    showMoreBtn: {
+        color: Colors.textoSecundario,
+        fontSize: 12,
+        fontFamily: FONT_BOLD,
+        textDecorationLine: 'underline',
+    },
+    symptomsBanner: {
+        width: '100%',
+        backgroundColor: 'rgba(106,90,205,0.12)',
+        borderRadius: 12,
+        padding: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 8,
+    },
+    symptomsBannerText: {
+        color: Colors.textoPrincipal,
+        flex: 1,
+        marginRight: 8,
+        fontFamily: FONT_REGULAR,
+        fontSize: 12,
+        lineHeight: 16,
+    },
     divider: {
         height: 1,
         backgroundColor: 'rgba(255,255,255,0.06)',
@@ -369,5 +469,24 @@ infoBlock: {
     bannerCloseText: {
         color: Colors.textoSecundario,
         fontSize: 13,
+    },
+    deleteAccountButton: {
+        marginTop: 18,
+        alignSelf: 'flex-end',
+        backgroundColor: Colors.menstrual,
+        borderRadius: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        height: 44,
+        width: 340,
+    },
+    deleteAccountText: {
+        color: Colors.textoPrincipal,
+        fontSize: 13,
+        fontFamily: FONT_REGULAR,
+        marginLeft: 8,
     }
 });

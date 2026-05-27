@@ -1,14 +1,15 @@
 import { auth, db } from './firebaseConfig';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { calcularPerfilClinico } from '../utils/clicnicCalculator';
-import { saveOnboardingProfile } from './storageService';
+import { saveOnboardingProfile, clearCycleData } from './storageService';
 
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
     sendPasswordResetEmail,
-    updateProfile
+    updateProfile,
+    deleteUser
 } from 'firebase/auth';
 /**
  * authService:
@@ -110,5 +111,42 @@ export const guardarPerfilOnboarding = async (inputsRaw) => {
     } catch (error) {
         console.error("Error al guardar el onboarding:", error);
         return { success: false, error: error.message };
+    }
+};
+
+export const deleteAccount = async () => {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            return { success: false, error: 'No hay una sesión activa.' };
+        }
+
+        try {
+            await deleteDoc(doc(db, 'users', user.uid));
+        } catch (error) {
+            // Si falla borrar documento, no bloqueamos el borrado de Auth.
+            console.warn('No se pudo borrar el documento de usuario:', error);
+        }
+
+        try {
+            await clearCycleData(user.uid);
+        } catch (error) {
+            console.warn('No se pudo limpiar almacenamiento local:', error);
+        }
+
+        await deleteUser(user);
+        return { success: true };
+    } catch (error) {
+        if (error?.code === 'auth/requires-recent-login') {
+            return {
+                success: false,
+                error: 'Por seguridad, vuelve a iniciar sesión e intenta eliminar la cuenta de nuevo.'
+            };
+        }
+
+        return {
+            success: false,
+            error: 'No se pudo eliminar la cuenta. Inténtalo de nuevo.'
+        };
     }
 };

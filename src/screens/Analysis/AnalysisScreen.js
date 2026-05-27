@@ -9,7 +9,6 @@ import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
 import { getMonthWithPhases } from '../../utils/dateHelpers';
 import { obtenerTrackingDiarioHoy } from '../../services/trackingService';
 
-// Solo importamos el icono de cerrar para el modal
 import { X } from 'lucide-react-native';
 
 // Base de datos de consejos

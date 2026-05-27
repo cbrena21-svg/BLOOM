@@ -23,12 +23,12 @@ export default function BottomNavigation() {
                 <Ionicons name='add' size={28} color='#1A1A2F' />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                <Ionicons name='person-outline' size={28} color='#C8B8D8' />
-            </TouchableOpacity>
-
             <TouchableOpacity onPress={() => navigation.navigate('Analysis')}>
                 <Ionicons name='book-outline' size={28} color='#C8B8D8' />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                <Ionicons name='person-outline' size={28} color='#C8B8D8' />
             </TouchableOpacity>
         </View>
     );

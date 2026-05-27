@@ -66,8 +66,6 @@ const exerciseOptions = [
 ];
 
 const timeOptions = [15, 30, 45, 60, 90];
-
-// --- CONSTANTES SECCIÓN 4 (SEXUALIDAD Y FERTILIDAD) ---
 const metodosHormonales = [
     'Pastillas combinadas', 'Mini-píldora (Solo Progesterona)',
     'DIU Hormonal (Mirena / Kyleena)', 'Implante subdérmico',
@@ -109,7 +107,6 @@ export default function TrackingScreen() {
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [exerciseMinutes, setExerciseMinutes] = useState(null);
 
-    // --- ESTADOS SECCIÓN 4 (SEXUALIDAD Y FERTILIDAD) ---
     const [isSexOpen, setIsSexOpen] = useState(false);
     const [userContraceptive, setUserContraceptive] = useState('Ninguno');
     const [isHormonal, setIsHormonal] = useState(false);
@@ -175,7 +172,7 @@ export default function TrackingScreen() {
                     if (resultado.success && resultado.data) {
                         const data = resultado.data;
 
-                        // 1. Mapeamos de vuelta los síntomas físicos (IDs correspondientes)
+                        // 1. Mapeamos de vuelta los síntomas físicos
                         const symptomsArr = [];
                         if (data.cuerpo_sintomas?.flag_symptom_pain) symptomsArr.push('colicos');
                         if (data.cuerpo_sintomas?.flag_symptom_breast) symptomsArr.push('sensibilidad');
@@ -184,7 +181,7 @@ export default function TrackingScreen() {
                         if (data.cuerpo_sintomas?.flag_symptom_hotflashes) symptomsArr.push('sofocos');
                         setSelectedSymptoms(symptomsArr);
 
-                        // 2. Mapeamos el resto de los estados de tu formulario
+                        // 2. Mapeamos el resto de los estados
                         setSelectedDigestion(data.cuerpo_sintomas?.digestion === 'none' ? null : data.cuerpo_sintomas?.digestion);
                         setSelectedEnergy(data.energia_mente?.bateria_energia === 'none' ? null : data.energia_mente?.bateria_energia);
                         setSelectedMood(data.energia_mente?.animo === 'none' ? null : data.energia_mente?.animo);
@@ -375,7 +372,6 @@ export default function TrackingScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* El logo superior solo se muestra si NO estamos en la vista de resumen */}
             {!mostrarResumen && (
                 <View style={styles.logoContainer}>
                     <Image
@@ -392,13 +388,10 @@ export default function TrackingScreen() {
             />
 
             {mostrarResumen ? (
-                /* =========================================================
-                   VISTA DE LA CAJITA (RESUMEN DE SÍNTOMAS)
-                   ========================================================= */
+                //vista resumen
                 <View style={styles.summaryCenterContainer}>
                     <View style={styles.summaryCardTransparent}>
 
-                        {/* Logo Bloom más grande integrado en el resumen */}
                         <Image
                             source={require('../../../assets/icons/Group_35.png')}
                             style={styles.logoLarge}
@@ -424,14 +417,12 @@ export default function TrackingScreen() {
                     </View>
                 </View>
             ) : (
-                /* =========================================================
-                   VISTA DEL FORMULARIO ORIGINAL
-                   ========================================================= */
+                //formulario original
                 <ScrollView contentContainerStyle={styles.scrollContent}>
 
                     <Text style={[styles.screenSubtitle, { color: themeColor }]}>Registra tus síntomas de hoy</Text>
 
-                    {/* --- SECCIÓN 1: CONTROL DE FLUJO --- */}
+                    //sección 1
                     <View style={styles.moduleContainer}>
                         <View style={styles.titleHeaderRow}>
                             <Text style={styles.sectionTitle}>Control de Flujo</Text>
@@ -486,7 +477,6 @@ export default function TrackingScreen() {
                                     </TouchableOpacity>
                                 </View>
 
-                                {/* Pregunta de coágulos (ahora independiente del contador) */}
                                 <Text style={styles.labelSubMargin}>¿Identificaste presencia de coágulos?</Text>
                                 <View style={styles.row}>
                                     <TouchableOpacity
@@ -515,9 +505,8 @@ export default function TrackingScreen() {
                             </View>
                         )}
                     </View>
-                    {/* FIN SECCIÓN 1 */}
 
-                    {/* --- SECCIÓN 2: CUERPO Y SÍNTOMAS --- */}
+                    //sección 2
                     <View style={[styles.moduleContainer, { marginTop: 15 }]}>
                         <View style={styles.titleHeaderRow}>
                             <Text style={styles.sectionTitle}>Cuerpo y Síntomas</Text>
@@ -559,9 +548,7 @@ export default function TrackingScreen() {
                             </View>
                         </View>
                     </View>
-                    {/* FIN SECCIÓN 2 */}
-
-                    {/* --- SECCIÓN 3: ENERGÍA Y MENTE --- */}
+                    //sección 3
                     <View style={[styles.moduleContainer, { marginTop: 15 }]}>
                         <View style={styles.titleHeaderRow}>
                             <Text style={styles.sectionTitle}>Energía y Mente</Text>
@@ -678,9 +665,7 @@ export default function TrackingScreen() {
                             )}
                         </View>
                     </View>
-                    {/* FIN SECCIÓN 3 */}
-
-                    {/* --- SECCIÓN 4: SEXUALIDAD Y FERTILIDAD --- */}
+                    //seccion 4
                     <View style={[styles.moduleContainer, { marginTop: 15 }]}>
                         <View style={styles.titleHeaderRow}>
                             <Text style={styles.sectionTitle}>Sexualidad y Fertilidad</Text>
@@ -727,8 +712,7 @@ export default function TrackingScreen() {
                                     <Text style={[styles.productPillText, sexPresent === 'no' && styles.singleSelectedText]}>No</Text>
                                 </TouchableOpacity>
                             </View>
-
-                            {/* FLUJO PERFIL NATURAL */}
+                            //perfil natural
                             {!isHormonal && sexPresent === 'si' && (
                                 <View style={{ marginTop: 10 }}>
                                     <Text style={styles.labelSubMargin}>Protección utilizada:</Text>
@@ -778,7 +762,7 @@ export default function TrackingScreen() {
                                 </View>
                             )}
 
-                            {/* FLUJO PERFIL ARTIFICIAL / HORMONAL */}
+                            //perfil artificial
                             {isHormonal && (
                                 <View style={{ marginTop: 10 }}>
                                     <Text style={styles.labelSubMargin}>¿Verificaste tu método hoy? ({userContraceptive})</Text>
@@ -808,9 +792,7 @@ export default function TrackingScreen() {
                             )}
                         </View>
                     </View>
-                    {/* FIN SECCIÓN 4 */}
-
-                    {/* --- SECCIÓN 5: NOTAS --- */}
+                    //seccion 5
                     <View style={[styles.moduleContainer, { marginTop: 15, marginBottom: 20 }]}>
                         <Text style={styles.sectionTitle}>Notas del día</Text>
                         <Text style={styles.labelSub}>
@@ -825,9 +807,7 @@ export default function TrackingScreen() {
                             placeholderTextColor="#666"
                         />
                     </View>
-                    {/* FIN SECCIÓN 5 */}
-
-                    {/* BOTÓN GUARDAR */}
+                    //boton guardar
                     <TouchableOpacity
                         style={[
                             styles.transparentAccentButton,
@@ -871,20 +851,15 @@ const styles = StyleSheet.create({
     blurBackground: { position: 'absolute', top: 80, right: -80, width: 280, height: 280, zIndex: -1 },
     questionText: { color: 'white', fontSize: 16, fontFamily: FONT_BOLD, marginBottom: 12 },
 
-    // ------------------------------------------
-    // FRASE PRINCIPAL (Ajustada para fondo oscuro)
-    // ------------------------------------------
     screenSubtitle: {
         fontSize: 22,
-        fontWeight: '900', // Máximo grosor para que no se vea pálida
-        color: '#FFF',     // Blanco puro para resaltar en el fondo oscuro
+        fontWeight: '900',
+        color: '#FFF',
         textAlign: 'center',
         marginVertical: 15,
     },
 
-    // ------------------------------------------
-    // UNIFICACIÓN DE COLOR (Seleccionado)
-    // ------------------------------------------
+    //selección
     singleSelectedPill: {
         backgroundColor: '#333',
         borderColor: '#333',
@@ -894,9 +869,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontWeight: 'bold',
     },
-    // ------------------------------------------
-    // CAJITA DE RESUMEN (Centrada y Transparente)
-    // ------------------------------------------
+    //cajita de resumen
     summaryCenterContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -920,20 +893,18 @@ const styles = StyleSheet.create({
     summaryCardTransparent: {
         width: '100%',
         minHeight: 280,
-        backgroundColor: 'transparent', // Sin cajita blanca
+        backgroundColor: 'transparent',
         padding: 30,
         justifyContent: 'center',
         alignItems: 'center',
     },
     logoLarge: {
-        width: 140, // Logo más grande para el centro
+        width: 140,
         height: 60,
         marginBottom: 20,
     },
 
-    // ------------------------------------------
-    // BOTONES SEMI-TRANSPARENTES (Fase)
-    // ------------------------------------------
+    //botones semitransparente
     transparentAccentButton: {
         backgroundColor: 'rgba(200, 29, 37, 0.7)',
         borderRadius: 15,
@@ -957,11 +928,10 @@ const styles = StyleSheet.create({
     productCardText: { color: '#AAA', fontSize: 13, fontFamily: FONT_REGULAR, textAlign: 'center' },
     productCardTextActive: { color: 'white', fontFamily: FONT_BOLD },
 
-    // --- ESTILOS DE PÍLDORAS BASE ---
+    // pildoras base
     productPill: { backgroundColor: '#1A1A2E', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, marginBottom: 4 },
     productPillText: { color: 'white', fontSize: 13, fontWeight: '600', fontFamily: FONT_REGULAR },
 
-    // --- COLORES ACTIVOS POR CATEGORÍA ---
     productPillSelected: { backgroundColor: Colors.menstrual || '#C81D25' },
     symptomPillSelected: { backgroundColor: '#4A1525' },
     digestionPillSelected: { backgroundColor: '#2E2E42' },
@@ -971,7 +941,7 @@ const styles = StyleSheet.create({
     sleepPillSelected: { backgroundColor: '#5BC0DE' },
     exercisePillSelected: { backgroundColor: '#5CB85C' },
 
-    // --- ESTILOS BOTONES DE TIEMPO ---
+    // botones de tiempo
     timeInputContainer: { marginTop: 5 },
     timePill: { backgroundColor: '#0D0D1E', borderWidth: 1, borderColor: '#2E2E42', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 15, marginBottom: 4 },
     timePillSelected: { backgroundColor: '#5CB85C', borderColor: '#5CB85C' },
@@ -991,7 +961,7 @@ const styles = StyleSheet.create({
     saveButton: { backgroundColor: 'white', borderRadius: 25, paddingVertical: 15, alignItems: 'center', marginTop: 30 },
     saveButtonText: { color: '#000', fontSize: 16, fontWeight: '800', fontFamily: FONT_BOLD },
 
-    // --- ESTILOS SECCIÓN 4 (SEXUALIDAD) ---
+    // sección 4
     fluidPillSelected: { backgroundColor: '#E91E63' },
     sexPillGenericSelected: { backgroundColor: '#2E2E42' },
     sexNeutralSelected: { backgroundColor: '#8E44AD' },
@@ -1000,7 +970,7 @@ const styles = StyleSheet.create({
     protectionSelected: { backgroundColor: '#4A1525' },
     verificationSuccessSelected: { backgroundColor: '#5CB85C' },
 
-    // --- INPUT NOTAS ---
+    // input notas
     textInputStyle: {
         borderWidth: 1,
         borderColor: '#2E2E42',

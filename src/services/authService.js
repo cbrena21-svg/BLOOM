@@ -11,14 +11,8 @@ import {
     updateProfile,
     deleteUser
 } from 'firebase/auth';
-/**
- * authService:
- * Este archivo centraliza todas las peticiones a Firebase Auth.
- * Retornamos objetos { success: true/false, error: string } para que 
- * las pantallas solo tengan que leer el resultado.
- */
 
-// 1. REGISTRO DE NUEVA CUENTA
+//nueva cuenta
 export const signUp = async (email, password, username) => {
     try {
         // Paso A: Crear el usuario con correo y contraseña
@@ -37,7 +31,7 @@ export const signUp = async (email, password, username) => {
     }
 };
 
-// 2. INICIO DE SESIÓN
+// inicio de sesión
 export const login = async (email, password) => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -47,7 +41,7 @@ export const login = async (email, password) => {
     }
 };
 
-// 3. CERRAR SESIÓN
+// cerrar sesión
 export const logout = async () => {
     try {
         await signOut(auth);
@@ -57,7 +51,7 @@ export const logout = async () => {
     }
 };
 
-// 4. RECUPERAR CONTRASEÑA
+// recuperar contraseña
 export const resetPassword = async (email) => {
     try {
         await sendPasswordResetEmail(auth, email);
@@ -94,10 +88,9 @@ export const guardarPerfilOnboarding = async (inputsRaw) => {
         const user = auth.currentUser;
         if (!user) throw new Error("No hay un usuario autenticado activo.");
 
-        // Ejecutamos las matemáticas y banderas clínicas de tu Notion
+        // matemáticas y banderas clínicas Notion
         const perfilCompleto = calcularPerfilClinico(inputsRaw);
 
-        // Guardamos el documento en Firestore usando el UID del usuario como ID del documento
         await setDoc(doc(db, "users", user.uid), perfilCompleto);
 
         //guardamos una copia local en AsyncStorage para acceso rápido en la app -majo profileScreen

@@ -13,10 +13,9 @@ const firebaseConfig = {
     measurementId: "G-F8P5YVZR29"
 };
 
-// 🌟 REVOLUCIÓN DEL BUG: Guardamos si ya existe ANTES de crearla
 const yaExisteApp = getApps().length > 0;
 
-// Inicializamos la App usando nuestra constante limpia
+// constante limpia
 const app = yaExisteApp ? getApp() : initializeApp(firebaseConfig);
 
 // Inicializamos Firestore
@@ -24,11 +23,10 @@ const db = getFirestore(app);
 
 let auth;
 
-// Ahora la condición sí va a funcionar perfectamente en los recargos de Expo
 if (yaExisteApp) {
     auth = getAuth(app);
 } else {
-    // Esto se ejecutará SÍ O SÍ la primera vez, blindando tu sesión eterna
+    // se ejecutara la primera vez, sesión eterna
     auth = initializeAuth(app, {
         persistence: getReactNativePersistence(AsyncStorage)
     });

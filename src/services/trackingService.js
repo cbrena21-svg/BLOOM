@@ -1,11 +1,5 @@
 import { doc, setDoc, collection, getDocs, query, where, documentId, getDoc } from 'firebase/firestore';
 import { db, auth } from './firebaseConfig';
-
-/**
- * Guarda o actualiza el registro diario de síntomas de la usuaria activa.
- * Usa la fecha local actual (AAAA-MM-DD) como ID único del documento.
- * * @param {Object} datosTracking Objeto con los síntomas, estados de ánimo, etc.
- */
 export const guardarTrackingDiario = async (datosTracking) => {
     try {
         const usuarioActivo = auth.currentUser;
@@ -21,11 +15,10 @@ export const guardarTrackingDiario = async (datosTracking) => {
         const dia = String(hoy.getDate()).padStart(2, '0');
         const fechaID = `${anio}-${mes}-${dia}`;
 
-        // Referencia exacta: users / [uid] / daily_logs / [fecha]
+        // Referencia : users / [uid] / daily_logs / [fecha]
         const logRef = doc(db, 'users', usuarioActivo.uid, 'daily_logs', fechaID);
 
         // Guardamos los datos fusionando por si ya registró algo antes en el mismo día
-        // Nota: Agregué { merge: true } para que realmente fusione los datos y no sobrescriba lo anterior
         await setDoc(logRef, {
             ...datosTracking,
             ultima_actualizacion: hoy.toISOString(),
@@ -39,10 +32,7 @@ export const guardarTrackingDiario = async (datosTracking) => {
     }
 };
 
-/**
- * Trae los logs de todo un mes para pintarlos en el calendario
- * @param {string} mesAnoStr - Formato 'YYYY-MM'
- */
+//logs de todo el mes
 export const obtenerTrackingMensual = async (mesAnoStr) => {
     try {
         const usuarioActivo = auth.currentUser;
@@ -72,9 +62,7 @@ export const obtenerTrackingMensual = async (mesAnoStr) => {
     }
 };
 
-/**
- * Obtiene el registro de síntomas de hoy para la usuaria activa.
- */
+
 export const obtenerTrackingDiarioHoy = async () => {
     try {
         const usuarioActivo = auth.currentUser;

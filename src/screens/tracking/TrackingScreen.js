@@ -410,14 +410,14 @@ export default function TrackingScreen() {
                         </Text>
 
                         <Text style={{ color: '#666', textAlign: 'center', marginBottom: 35, fontSize: 16, lineHeight: 22 }}>
-                            Ya guardaste tu registro de hoy. Puedes ver tus respuestas o editarlas aquí mismo.
+                            Ya guardaste tu registro de hoy.
                         </Text>
 
                         <TouchableOpacity
                             style={[styles.transparentAccentButton, { backgroundColor: themeColor }]}
                             onPress={() => setMostrarResumen(false)}
                         >
-                            <Text style={[styles.productPillText, { color: '#fff', fontWeight: 'bold' }]}>
+                            <Text style={[styles.productPillText, { color: '#000', fontWeight: 'bold' }]}>
                                 Editar Registro
                             </Text>
                         </TouchableOpacity>
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
     // ------------------------------------------
     transparentAccentButton: {
         backgroundColor: 'rgba(200, 29, 37, 0.7)',
-        borderRadius: 25,
+        borderRadius: 15,
         paddingHorizontal: 40,
         paddingVertical: 14,
         alignItems: 'center',
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     clotButtonYesSelected: { backgroundColor: Colors.menstrual || '#C81D25' },
     clotButtonText: { color: 'white', fontSize: 15, fontWeight: '700', fontFamily: FONT_BOLD },
     saveButton: { backgroundColor: 'white', borderRadius: 25, paddingVertical: 15, alignItems: 'center', marginTop: 30 },
-    saveButtonText: { color: Colors.fondo, fontSize: 16, fontWeight: '800', fontFamily: FONT_BOLD },
+    saveButtonText: { color: '#000', fontSize: 16, fontWeight: '800', fontFamily: FONT_BOLD },
 
     // --- ESTILOS SECCIÓN 4 (SEXUALIDAD) ---
     fluidPillSelected: { backgroundColor: '#E91E63' },

@@ -2,7 +2,7 @@ import { Colors } from '../styles/colors';
 
 export const CONSEJOS_FASES = {
     folicular: {
-        colorTema: Colors.folicular || '#FFB6C1',
+        colorTema: Colors.folicular || '#8E73A9',
         titulo: 'Fase Folicular',
         subtitulo: 'Nuevos comienzos, creatividad y apertura',
         fraseFrasco: 'Momento para plantar intenciones. ¿Qué deseas incrementar en tu vida hoy?',
@@ -53,7 +53,7 @@ export const CONSEJOS_FASES = {
     },
 
     ovulatoria: {
-        colorTema: Colors.ovulatoria || '#E6E6FA',
+        colorTema: Colors.ovulatoria || '#8295B6',
         titulo: 'Fase Ovulatoria',
         subtitulo: 'Socialización, comunicación y máximo magnetismo',
         fraseFrasco: 'Tu energía y magnetismo están al máximo. Momento ideal para conectar y brillar.',
@@ -105,7 +105,7 @@ export const CONSEJOS_FASES = {
         }
     },
     lutea: {
-        colorTema: Colors.lutea || '#FFD700',
+        colorTema: Colors.lutea || '#748E85',
         titulo: 'Fase Lútea',
         subtitulo: 'Focalización, organización y conclusión',
         fraseFrasco: 'Tu energía se interioriza. Momento ideal para cerrar ciclos, organizar tu entorno y escuchar tu cuerpo.',
@@ -160,7 +160,7 @@ export const CONSEJOS_FASES = {
     },
 
     menstrual: {
-        colorTema: Colors.menstrual || '#FF6B6B',
+        colorTema: Colors.menstrual || '#8E4A4E',
         titulo: 'Fase Menstrual',
         subtitulo: 'Introspección, renovación y descanso profundo',
         fraseFrasco: 'Momento de soltar lo que ya no te sirve y escuchar tu sabiduría interior.',

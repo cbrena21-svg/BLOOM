@@ -48,7 +48,7 @@ export const CONSEJOS_FASES = {
         relaciones: {
             consejoGeneral: 'Estás más receptiva a experiencias nuevas y con mayor energía social. Sin embargo, tus hormonas sexuales apenas van subiendo, por lo que es una de las fases secas del ciclo.',
             tipsClave: [
-                '¡Usa lubricante! Al estar el estrógeno en horas bajas al inicio, la vagina está menos húmeda; usarlo intensificará y facilitará tus orgasmos.',
+                '¡Usa lubricante! Al estar el estrógeno in horas bajas al inicio, la vagina está menos húmeda; usarlo intensificará y facilitará tus orgasmos.',
                 'Prueben algo nuevo en pareja (viajar, ir a un museo, hacer ejercicio juntos). Las experiencias novedosas elevan la oxitocina y el óxido nítrico, uniendo más a la relación.',
                 'En el sexo, es el momento perfecto para renovarse: prueben nuevas posturas, técnicas de masaje tántrico o cambios de roles para potenciar la meseta orgásmica.'
             ],
@@ -143,7 +143,7 @@ export const CONSEJOS_FASES = {
                 'Si se ajusta a tu agenda, haz tus rutinas por la tarde para alinearte con tu reloj biológico de 24 horas.'
             ],
             sugeridosPrimeraMitad: ['Entrenamiento de fuerza', 'Levantamiento de pesas', 'Yoga intenso', 'HIIT moderado'],
-            sugeridosSegundaMitad: ['Pilates', 'Barre', 'Yoga suave', 'Estiramientos / Recuperación']
+            sugeridos: ['Pilates', 'Barre', 'Yoga suave', 'Estiramientos / Recuperación']
         },
         proyectos: {
             consejoGeneral: 'Tu energía física se enfoca hacia tu interior. Es tu fase dorada para terminar tareas pendientes y realizar "trabajo profundo". Tu cerebro empieza a dar absoluta prioridad a los detalles que pasaste por alto el resto del mes.',
@@ -201,22 +201,14 @@ export const CONSEJOS_FASES = {
             yogaDolor: ['Postura del triángulo', 'Pinza de pie', 'Perro bocabajo', 'Postura del pez']
         },
         proyectos: {
-            consejoGeneral: 'Es tu fase para frenar, relajarte y reflexionar sobre el mes anterior. Sé sumamente amable contigo misma al evaluar tus logros y confía plenamente en tu intuición para ver qué necesita atención.',
+            consejoGeneral: 'Es tu fase para frenar, reflexionar y evaluar con absoluta amabilidad. La comunicación entre tus hemisferios cerebrales es más potente que nunca, otorgándote una claridad intuitiva asombrosa para analizar tus proyectos, carrera y metas profesionales.',
             tipsClave: [
-                'Dedica tiempo a escribir en tu diario íntimo para procesar tus emociones y pensamientos.',
-                'Observa con calma de qué cosas o hábitos debes prescindir y cuáles vas a cambiar en el mes que viene.',
-                'Utiliza este aislamiento reflexivo como el punto de partida perfecto para plantear tus intenciones en la siguiente fase folicular.'
+                'Aprovecha esta ventana para evaluar juiciosamente cómo va tu carrera o negocio, analizando datos, métricas e informes con cabeza fría.',
+                'Escucha los mensajes sutiles de tu intuición; te ayudarán a identificar si vas por buen rumbo o si necesitas redireccionar estrategias.',
+                'Dedica tiempo a escribir en tu diario íntimo para procesar tus emociones y detectar de qué hábitos o proyectos debes prescindir.',
+                '⚠️ REGLA DE ORO: Haz pausas con mucha frecuencia durante tu jornada laboral y utiliza este aislamiento reflexivo para sembrar tus próximas intenciones.'
             ],
-            actividades: ['Relajarse y descansar', 'Escribir en un diario personal', 'Reflexionar sobre el mes anterior', 'Detectar áreas de la vida que necesitan atención', 'Identificar hábitos de los cuales prescindir', 'Plantear intenciones futuras']
-        },
-        trabajo: {
-            consejoGeneral: 'En la fase menstrual, la comunicación entre tus hemisferios cerebrales izquierdo y derecho es más potente que nunca. Esto te otorga una claridad intuitiva asombrosa para el análisis y la evaluación.',
-            tipsClave: [
-                'Aprovecha esta ventana para evaluar juiciosamente cómo va tu carrera o proyecto, analizar datos, informes métricos y reevaluar metas profesionales.',
-                'Escucha los mensajes sutiles de tu intuición; te ayudarán a identificar si vas por buen rumbo o si necesitas corregir la dirección.',
-                '⚠️ REGLA DE ORO: Haz pausas con mucha frecuencia durante tu jornada laboral y, si es posible en tu agenda, tómate un día libre.'
-            ],
-            actividades: ['Evaluar tus metas profesionales', 'Analizar datos e informes de proyectos', 'Revisar si tus proyectos actuales te satisfacen', 'Hacer pausas laborales frecuentes', 'Escuchar la intuición para redireccionar estrategias']
+            actividades: ['Relajarse y descansar', 'Evaluar metas profesionales', 'Analizar datos e informes de proyectos', 'Reflexionar sobre el mes anterior', 'Detectar áreas de la vida que necesitan atención', 'Identificar hábitos de los cuales prescindir', 'Escuchar la intuición para redireccionar estrategias', 'Plantear intenciones futuras', 'Hacer pausas laborales frecuentes']
         },
         relaciones: {
             consejoGeneral: 'Es normal que tu interés social y sexual disminuya, y que sientas el deseo de pasar tiempo a solas para recargar pilas. Concédete espacios de absoluto cuidado personal.',
@@ -262,7 +254,7 @@ export const ALERTAS_SINTOMAS_DIAGNOSTICOS = {
                 'Reduce al máximo o elimina el consumo de lácteos, alcohol, gluten, carne roja y alimentos con pesticidas.'
             ]
         },
-        pmos: { // Corregido de PMOS a SOP (Síndrome de Ovario Poliquístico)
+        pmos: {
             titulo: 'Consejos para SOP',
             consejoGeneral: 'El enfoque principal en el SOP es mejorar la sensibilidad a la insulina a través de la fibra.',
             recomendados: [
@@ -279,7 +271,7 @@ export const ALERTAS_SINTOMAS_DIAGNOSTICOS = {
     sintomas: {
         menstruacionDolorosa: {
             titulo: 'Alivio de Cólicos Menstruales',
-            consejoGeneral: 'Antes de recurrir a medicamentos, busca regular las prostaglandinas (hormonas del dolor) mediante nutrientes clave.',
+            consejoGeneral: 'Before resorting to medications, target regulating prostaglandins (pain hormones) with key nutrients.',
             recomendados: [
                 'Come almendras o avellanas: su vitamina E ha demostrado científicamente reducir el dolor menstrual.',
                 'Consume verduras de hoja verde (como la berza) por su alto contenido de magnesio, que relaja el útero.',

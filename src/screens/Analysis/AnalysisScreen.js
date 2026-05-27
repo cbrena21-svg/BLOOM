@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Modal, Image } from 'react-native';
 import dayjs from 'dayjs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../styles/colors';
@@ -7,10 +7,12 @@ import { FONT_REGULAR, FONT_BOLD } from '../../styles/typography';
 import BottomNavigation from '../../components/common/BottomNavigationBar';
 import { obtenerPerfilUsuario } from '../../services/firebaseConfig';
 import { getMonthWithPhases } from '../../utils/dateHelpers';
-
 import { obtenerTrackingDiarioHoy } from '../../services/trackingService';
 
-// Importamos la base de datos de consejos
+// Solo importamos el icono de cerrar para el modal
+import { X } from 'lucide-react-native';
+
+// Base de datos de consejos
 import { CONSEJOS_FASES, ALERTAS_SINTOMAS_DIAGNOSTICOS } from '../../utils/tipsData';
 
 export default function TipsScreen({ navigation }) {
@@ -19,12 +21,11 @@ export default function TipsScreen({ navigation }) {
     const [faseHoy, setFaseHoy] = useState(null);
     const [estadoArtificial, setEstadoArtificial] = useState(null);
     const [alertasActivas, setAlertasActivas] = useState([]);
-    const [verSuper, setVerSuper] = useState(false); // Estado para colapsar/mostrar la lista del súper
+    const [modalVisible, setModalVisible] = useState(null);
 
     useEffect(() => {
         const cargarDatosPantalla = async () => {
             try {
-                // 1. Obtener perfil del usuario desde Firebase
                 const resultado = await obtenerPerfilUsuario();
                 const resultadoLog = await obtenerTrackingDiarioHoy();
                 const logHoy = resultadoLog.success ? resultadoLog.data : null;
@@ -33,14 +34,10 @@ export default function TipsScreen({ navigation }) {
                     const perfil = resultado.data;
                     setUserData(perfil);
 
-                    console.log("Pathologies en Firebase perfil:", perfil);
-                    console.log("Log de hoy en Firebase:", logHoy);
-
-                    // 2. Calcular fase actual del ciclo natural o artificial
                     const diasDelMes = getMonthWithPhases(dayjs(), perfil);
                     const diaDeHoy = diasDelMes.find(d => d.isToday === true);
 
-                    let faseCalculada = 'folicular'; // Fallback por defecto
+                    let faseCalculada = 'folicular';
 
                     if (perfil.user_profile === 'ARTIFICIAL') {
                         if (diaDeHoy && diaDeHoy.phase === 'menstrual') {
@@ -48,50 +45,29 @@ export default function TipsScreen({ navigation }) {
                             faseCalculada = 'menstrual';
                         } else {
                             setEstadoArtificial('ACTIVO');
-                            faseCalculada = 'folicular'; // Usamos folicular como base activa estable
+                            faseCalculada = 'folicular';
                         }
                     } else {
                         faseCalculada = diaDeHoy ? diaDeHoy.phase : 'folicular';
                         setFaseHoy(faseCalculada);
                     }
 
-                    // 3. Evaluar alertas personalizadas (Diagnósticos del perfil + Síntomas)
-                    // NOTA: Aquí puedes extender "logDiario" si haces la consulta a tu colección daily_logs
                     const alertas = [];
-
-                    // --- DIAGNÓSTICOS (Onboarding) ---
-                    if (perfil.flag_pathology_miomas) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.diagnosticos.miomas);
-                    }
-                    if (perfil.flag_pathology_endo) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.diagnosticos.endometriosis);
-                    }
-                    if (perfil.flag_pathology_pmos) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.diagnosticos.pmos);
-                    }
-
-                    // --- SÍNTOMAS ACTIVOS (Tiempo Real: Se activa si es crónico O si lo marcó hoy)
-                    // Nota: Evaluamos tanto en la raíz del log como dentro de 'cuerpo_sintomas' por si acaso
+                    if (perfil.flag_pathology_miomas) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.diagnosticos.miomas);
+                    if (perfil.flag_pathology_endo) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.diagnosticos.endometriosis);
+                    if (perfil.flag_pathology_pmos) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.diagnosticos.pmos);
 
                     const tieneDolor = perfil.flag_symptom_pain || logHoy?.cuerpo_sintomas?.flag_symptom_pain || logHoy?.flag_symptom_pain;
-                    if (tieneDolor) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.menstruacionDolorosa);
-                    }
+                    if (tieneDolor) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.menstruacionDolorosa);
 
                     const tieneHinchazon = perfil.flag_symptom_bloat || logHoy?.cuerpo_sintomas?.flag_symptom_bloat || logHoy?.flag_symptom_bloat;
-                    if (tieneHinchazon) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.hinchazon);
-                    }
+                    if (tieneHinchazon) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.hinchazon);
 
                     const tieneAcne = perfil.flag_symptom_acne || logHoy?.cuerpo_sintomas?.flag_symptom_acne || logHoy?.flag_symptom_acne;
-                    if (tieneAcne) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.acne);
-                    }
+                    if (tieneAcne) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.acne);
 
                     const tieneSensibilidad = perfil.flag_symptom_breast || logHoy?.cuerpo_sintomas?.flag_symptom_breast || logHoy?.flag_symptom_breast;
-                    if (tieneSensibilidad) {
-                        alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.sensibilidadMamaria);
-                    }
+                    if (tieneSensibilidad) alertas.push(ALERTAS_SINTOMAS_DIAGNOSTICOS.sintomas.sensibilidadMamaria);
 
                     setAlertasActivas(alertas);
                 }
@@ -113,147 +89,185 @@ export default function TipsScreen({ navigation }) {
         );
     }
 
-    // Determinamos el set de consejos de fase que usaremos hoy
     const faseActualKey = userData?.user_profile === 'ARTIFICIAL'
         ? (estadoArtificial === 'DESCANSO' ? 'menstrual' : 'folicular')
         : (faseHoy || 'folicular');
 
     const infoFase = CONSEJOS_FASES[faseActualKey];
+    const themeColor = infoFase?.colorTema || '#FFB6C1';
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <Image
+                source={require('../../../assets/images/CircleLayer.png')}
+                style={styles.blurBackground}
+            />
+
+            {/* 1. LOGO CENTRADO (Revertido a posición original) */}
+            <View style={styles.headerBloomCentered}>
+                <Image
+                    source={require('../../../assets/icons/Group_35.png')}
+                    style={styles.logoHeaderCentered}
+                    resizeMode="contain"
+                />
+            </View>
+
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
 
-                    {/* ENCABEZADO DINÁMICO */}
-                    <Text style={styles.title}>Mis Consejos</Text>
-                    <View style={[styles.phaseBadge, { backgroundColor: infoFase?.colorTema || '#FFB6C1' }]}>
-                        <Text style={styles.phaseBadgeText}>
-                            {userData?.user_profile === 'ARTIFICIAL'
-                                ? `Perfil Artificial: ${estadoArtificial}`
-                                : infoFase?.titulo}
+                    {/* 2. FRASE DE DOS NIVELES CENTRADA */}
+                    <View style={styles.phraseContainerCentered}>
+                        <Text style={styles.preTitleCentered}>Hoy es un buen día para...</Text>
+                        <Text style={styles.mainTitleCentered}>
+                            conectar contigo <Text style={{ color: themeColor }}></Text>
                         </Text>
                     </View>
-                    <Text style={styles.subtitle}>{infoFase?.subtitulo}</Text>
 
-                    {/* FRASE INSPIRACIONAL DEL FRASCO */}
-                    <View style={styles.frascoCard}>
-                        <Text style={styles.frascoText}>“ {infoFase?.fraseFrasco} ”</Text>
-                    </View>
+                    {/* GRID DE TARJETAS */}
+                    <View style={styles.gridContainer}>
 
-                    {/* ======================================================= */}
-                    {/* SECCIÓN 1: SECCIÓN ALERTAS DE SALUD PERSONALIZADAS      */}
-                    {/* ======================================================= */}
-                    {alertasActivas.length > 0 && (
-                        <View style={styles.sectionContainer}>
-                            <Text style={styles.sectionHeaderTitle}>⚠️ Ajustes por tus Síntomas o Diagnóstico</Text>
-                            {alertasActivas.map((alerta, index) => (
-                                <View key={index} style={styles.alertCard}>
-                                    <Text style={styles.alertCardTitle}>{alerta.titulo}</Text>
-                                    <Text style={styles.cardParagraph}>{alerta.consejoGeneral}</Text>
-
-                                    <Text style={styles.bulletHeader}>Recomendaciones:</Text>
-                                    {alerta.recomendados.map((rec, rIdx) => (
-                                        <Text key={rIdx} style={styles.bulletItem}>• {rec}</Text>
-                                    ))}
-
-                                    {alerta.evitar && alerta.evitar.length > 0 && (
-                                        <>
-                                            <Text style={[styles.bulletHeader, { color: '#FF8B8B', marginTop: 8 }]}>Evitar prioritariamente:</Text>
-                                            {alerta.evitar.map((ev, eIdx) => (
-                                                <Text key={eIdx} style={styles.bulletItem}>• {ev}</Text>
-                                            ))}
-                                        </>
-                                    )}
+                        {alertasActivas.length > 0 && (
+                            <TouchableOpacity
+                                style={styles.fullWidthCard}
+                                onPress={() => setModalVisible('alertas')}
+                                activeOpacity={0.8}
+                            >
+                                {/* 🌟 AJUSTE: NUEVO COMPONENTE ABSTRACTO (TRIÁNGULO DE ALERTA) */}
+                                <View style={styles.abstractVisualTriangle}>
+                                    <View style={[styles.triangleShape, { borderBottomColor: themeColor }]} />
                                 </View>
-                            ))}
-                        </View>
-                    )}
+                                <Text style={styles.cardText}>DIAGNÓSTICOS</Text>
+                            </TouchableOpacity>
+                        )}
 
-                    {/* ======================================================= */}
-                    {/* SECCIÓN 2: NUTRICIÓN                                    */}
-                    {/* ======================================================= */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>🍎 Nutrición Inteligente</Text>
-                        <Text style={styles.cardParagraph}>{infoFase?.nutricion?.consejoGeneral}</Text>
-                        {infoFase?.nutricion?.tipsClave.map((tip, idx) => (
-                            <Text key={idx} style={styles.bulletItem}>• {tip}</Text>
-                        ))}
-
-                        {/* Desplegable de Lista del Súper para no saturar la vista */}
-                        <TouchableOpacity style={styles.superDropdownButton} onPress={() => setVerSuper(!verSuper)}>
-                            <Text style={styles.superDropdownButtonText}>
-                                {verSuper ? '▲ Ocultar Lista del Súper sugerida' : '▼ Ver Lista del Súper sugerida'}
-                            </Text>
+                        <TouchableOpacity style={styles.squareCard} onPress={() => setModalVisible('nutricion')} activeOpacity={0.8}>
+                            <View style={styles.cardInnerCenter}>
+                                <View style={[styles.abstractVisual, { flexDirection: 'row' }]}>
+                                    <View style={[styles.circleShape, { backgroundColor: themeColor, opacity: 0.8 }]} />
+                                    <View style={[styles.circleShape, { backgroundColor: themeColor, opacity: 0.3, marginLeft: -12 }]} />
+                                </View>
+                                <Text style={styles.cardText}>NUTRICIÓN</Text>
+                            </View>
                         </TouchableOpacity>
 
-                        {verSuper && infoFase?.nutricion?.listaSuper && (
-                            <View style={styles.superContainer}>
-                                {Object.entries(infoFase.nutricion.listaSuper).map(([categoria, alimentos]) => (
-                                    <View key={categoria} style={styles.superCategoryBlock}>
-                                        <Text style={styles.superCategoryTitle}>{categoria.toUpperCase()}:</Text>
-                                        <Text style={styles.superCategoryItems}>{alimentos.join(', ')}</Text>
-                                    </View>
-                                ))}
+                        <TouchableOpacity style={styles.squareCard} onPress={() => setModalVisible('ejercicio')} activeOpacity={0.8}>
+                            <View style={styles.cardInnerCenter}>
+                                <View style={styles.abstractVisualEnergy}>
+                                    <View style={[styles.energyBar, { height: 10, backgroundColor: themeColor, opacity: 0.3 }]} />
+                                    <View style={[styles.energyBar, { height: 16, backgroundColor: themeColor, opacity: 0.6 }]} />
+                                    <View style={[styles.energyBar, { height: 24, backgroundColor: themeColor, opacity: 0.8 }]} />
+                                    <View style={[styles.energyBar, { height: 32, backgroundColor: themeColor }]} />
+                                </View>
+                                <Text style={styles.cardText}>EJERCICIO</Text>
                             </View>
-                        )}
-                    </View>
+                        </TouchableOpacity>
 
-                    {/* ======================================================= */}
-                    {/* SECCIÓN 3: EJERCICIO Y BIENESTAR FISICO                 */}
-                    {/* ======================================================= */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>💪 Ejercicio y Energía</Text>
-                        <Text style={styles.cardParagraph}>{infoFase?.ejercicio?.consejoGeneral}</Text>
-                        {infoFase?.ejercicio?.tipsClave.map((tip, idx) => (
-                            <Text key={idx} style={styles.bulletItem}>• {tip}</Text>
-                        ))}
+                        <TouchableOpacity style={styles.squareCard} onPress={() => setModalVisible('proyectos')} activeOpacity={0.8}>
+                            <View style={styles.cardInnerCenter}>
+                                <View style={styles.abstractVisualGrid}>
+                                    <View style={[styles.gridBlock, { backgroundColor: themeColor }]} />
+                                    <View style={[styles.gridBlock, { backgroundColor: themeColor, opacity: 0.3 }]} />
+                                    <View style={[styles.gridBlock, { backgroundColor: themeColor, opacity: 0.6 }]} />
+                                    <View style={[styles.gridBlockOutline, { borderColor: themeColor }]} />
+                                </View>
+                                <Text style={styles.cardText}>PROYECTOS</Text>
+                            </View>
+                        </TouchableOpacity>
 
-                        <Text style={styles.bulletHeader}>Ejercicios ideales para hoy:</Text>
-                        <Text style={styles.suggestedItems}>
-                            {infoFase?.ejercicio?.sugeridos ? infoFase.ejercicio.sugeridos.join('   |   ') : ''}
-                            {infoFase?.ejercicio?.sugeridosPrimeraMitad ? `Inicio fase: ${infoFase.ejercicio.sugeridosPrimeraMitad.join(', ')}` : ''}
-                            {infoFase?.ejercicio?.sugeridosSegundaMitad ? `\nFin fase: ${infoFase.ejercicio.sugeridosSegundaMitad.join(', ')}` : ''}
-                        </Text>
-                    </View>
-
-                    {/* ======================================================= */}
-                    {/* SECCIÓN 4: PROYECTOS Y PRODUCTIVIDAD                    */}
-                    {/* ======================================================= */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>💼 Enfoque y Proyectos</Text>
-                        <Text style={styles.cardParagraph}>{infoFase?.proyectos?.consejoGeneral}</Text>
-                        {infoFase?.proyectos?.tipsClave.map((tip, idx) => (
-                            <Text key={idx} style={styles.bulletItem}>• {tip}</Text>
-                        ))}
-                    </View>
-
-                    {/* ======================================================= */}
-                    {/* SECCIÓN 5: ENFOQUE LABORAL (Exclusivo Fase Menstrual)   */}
-                    {/* ======================================================= */}
-                    {infoFase?.trabajo && (
-                        <View style={styles.card}>
-                            <Text style={styles.cardTitle}>🧠 Análisis Laboral & Intuición</Text>
-                            <Text style={styles.cardParagraph}>{infoFase?.trabajo?.consejoGeneral}</Text>
-                            {infoFase?.trabajo?.tipsClave.map((tip, idx) => (
-                                <Text key={idx} style={styles.bulletItem}>• {tip}</Text>
-                            ))}
-                        </View>
-                    )}
-
-                    {/* ======================================================= */}
-                    {/* SECCIÓN 6: RELACIONES Y SEXUALIDAD                      */}
-                    {/* ======================================================= */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>❤️ Relaciones & Líbido</Text>
-                        <Text style={styles.cardParagraph}>{infoFase?.relaciones?.consejoGeneral}</Text>
-                        {infoFase?.relaciones?.tipsClave.map((tip, idx) => (
-                            <Text key={idx} style={styles.bulletItem}>• {tip}</Text>
-                        ))}
+                        <TouchableOpacity style={styles.squareCard} onPress={() => setModalVisible('relaciones')} activeOpacity={0.8}>
+                            <View style={styles.cardInnerCenter}>
+                                <View style={[styles.abstractVisual, { flexDirection: 'row' }]}>
+                                    <View style={[styles.ringShape, { borderColor: themeColor }]} />
+                                    <View style={[styles.ringShape, { borderColor: themeColor, opacity: 0.4, marginLeft: -10 }]} />
+                                </View>
+                                <Text style={styles.cardText}>RELACIONES</Text>
+                            </View>
+                        </TouchableOpacity>
                     </View>
 
                 </View>
             </ScrollView>
+
+            {/* MODAL (Se mantiene igual de diseño) */}
+            <Modal animationType="fade" transparent={true} visible={modalVisible !== null} onRequestClose={() => setModalVisible(null)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalSheet}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(null)} activeOpacity={0.7}>
+                            <X size={24} color="white" />
+                        </TouchableOpacity>
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScroll}>
+
+                            {modalVisible === 'alertas' && (
+                                <View>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Diagnósticos y Síntomas</Text>
+                                    {alertasActivas.map((alerta, index) => (
+                                        <View key={index} style={styles.infoBlock}>
+                                            <Text style={styles.infoBlockTitle}>{alerta.titulo}</Text>
+                                            <Text style={styles.paragraphText}>{alerta.consejoGeneral}</Text>
+                                            <Text style={styles.sectionBulletHeader}>Recomendaciones:</Text>
+                                            {alerta.recomendados.map((rec, rIdx) => <Text key={rIdx} style={styles.bulletItemText}>• {rec}</Text>)}
+                                            {alerta.evitar && alerta.evitar.length > 0 && (
+                                                <>
+                                                    <Text style={[styles.sectionBulletHeader, { color: themeColor }]}>Evitar prioritariamente:</Text>
+                                                    {alerta.evitar.map((ev, eIdx) => <Text key={eIdx} style={styles.bulletItemText}>• {ev}</Text>)}
+                                                </>
+                                            )}
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+
+                            {modalVisible === 'nutricion' && (
+                                <View>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Nutrición Inteligente</Text>
+                                    <Text style={styles.paragraphText}>{infoFase?.nutricion?.consejoGeneral}</Text>
+                                    {infoFase?.nutricion?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
+                                    <View style={styles.superContainerInside}>
+                                        <Text style={styles.sectionBulletHeader}>Lista del Súper Sugerida:</Text>
+                                        {Object.entries(infoFase?.nutricion?.listaSuper || {}).map(([categoria, alimentos]) => (
+                                            <View key={categoria} style={{ marginBottom: 10 }}>
+                                                <Text style={[styles.superCategoryLabel, { color: themeColor }]}>{categoria.toUpperCase()}:</Text>
+                                                <Text style={styles.superCategoryContent}>{alimentos.join(', ')}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {modalVisible === 'ejercicio' && (
+                                <View>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Ejercicio y Energía</Text>
+                                    <Text style={styles.paragraphText}>{infoFase?.ejercicio?.consejoGeneral}</Text>
+                                    {infoFase?.ejercicio?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
+                                    <Text style={styles.sectionBulletHeader}>Ejercicios ideales para hoy:</Text>
+                                    <View style={[styles.tagContainer, { borderColor: themeColor }]}>
+                                        <Text style={[styles.tagText, { color: themeColor }]}>
+                                            {infoFase?.ejercicio?.sugeridos ? infoFase.ejercicio.sugeridos.join('   |   ') : ''}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {modalVisible === 'proyectos' && (
+                                <View>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Enfoque y Proyectos</Text>
+                                    <Text style={styles.paragraphText}>{infoFase?.proyectos?.consejoGeneral}</Text>
+                                    {infoFase?.proyectos?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
+                                </View>
+                            )}
+
+                            {modalVisible === 'relaciones' && (
+                                <View>
+                                    <Text style={[styles.modalMainTitle, { color: themeColor }]}>Relaciones & Líbido</Text>
+                                    <Text style={styles.paragraphText}>{infoFase?.relaciones?.consejoGeneral}</Text>
+                                    {infoFase?.relaciones?.tipsClave.map((tip, idx) => <Text key={idx} style={styles.bulletItemText}>• {tip}</Text>)}
+                                </View>
+                            )}
+
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
 
             <BottomNavigation navigation={navigation} currentScreen="Analysis" />
         </SafeAreaView>
@@ -270,154 +284,116 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 110,
+        paddingHorizontal: 24,
+        paddingBottom: 120,
         paddingTop: 10,
     },
-    title: {
-        color: 'white',
-        fontSize: 32,
-        fontFamily: FONT_BOLD,
-        textAlign: 'center',
-        marginBottom: 8,
+    blurBackground: {
+        position: 'absolute',
+        top: -10,
+        right: -30,
+        width: 280,
+        height: 280,
+        zIndex: -1,
     },
-    subtitle: {
-        color: '#CCCCCC',
-        fontSize: 15,
-        textAlign: 'center',
-        fontFamily: FONT_REGULAR,
-        marginBottom: 16,
-        paddingHorizontal: 10,
+
+    // ============================================
+    // 🌟 ESTILOS CABECERA CENTRADA (LOGO + FRASE)
+    // ============================================
+    headerBloomCentered: {
+        alignItems: 'center',
+        paddingTop: 25,
+        paddingBottom: 10,
     },
-    phaseBadge: {
-        alignSelf: 'center',
-        paddingHorizontal: 18,
-        paddingVertical: 6,
-        borderRadius: 20,
-        marginBottom: 8,
+    logoHeaderCentered: {
+        width: 140, // Tamaño balanceado
+        height: 40,
     },
-    phaseBadgeText: {
-        color: '#111111',
-        fontFamily: FONT_BOLD,
-        fontSize: 14,
-        textTransform: 'uppercase',
-    },
-    frascoCard: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderLeftWidth: 4,
-        borderLeftColor: '#E6E6FA',
-        padding: 14,
-        borderRadius: 8,
-        marginBottom: 24,
-    },
-    frascoText: {
-        color: '#E6E6FA',
-        fontFamily: FONT_REGULAR,
-        fontSize: 15,
-        italic: 'italic',
-        lineHeight: 22,
-    },
-    sectionContainer: {
-        width: '100%',
-        marginBottom: 20,
-    },
-    sectionHeaderTitle: {
-        color: '#FFB6C1',
-        fontSize: 18,
-        fontFamily: FONT_BOLD,
-        marginBottom: 10,
-    },
-    alertCard: {
-        backgroundColor: 'rgba(255, 107, 107, 0.08)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 107, 107, 0.3)',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-    },
-    alertCardTitle: {
-        color: '#FF8B8B',
-        fontSize: 16,
-        fontFamily: FONT_BOLD,
-        marginBottom: 6,
-    },
-    card: {
-        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 16,
-        padding: 18,
-        marginBottom: 16,
+    phraseContainerCentered: {
+        marginTop: 25,
+        marginBottom: 35,
+        alignItems: 'center',
         width: '100%',
     },
-    cardTitle: {
-        color: 'white',
-        fontSize: 18,
-        fontFamily: FONT_BOLD,
-        marginBottom: 10,
-    },
-    cardParagraph: {
-        color: '#E0E0E0',
+    preTitleCentered: {
+        color: 'rgba(255,255,255,0.6)',
         fontSize: 14,
         fontFamily: FONT_REGULAR,
-        lineHeight: 21,
-        marginBottom: 12,
-    },
-    bulletHeader: {
-        color: 'white',
-        fontFamily: FONT_BOLD,
-        fontSize: 14,
-        marginTop: 12,
         marginBottom: 4,
     },
-    bulletItem: {
-        color: '#CCCCCC',
-        fontSize: 13,
-        fontFamily: FONT_REGULAR,
-        lineHeight: 19,
-        marginBottom: 6,
-        paddingLeft: 4,
-    },
-    suggestedItems: {
-        color: '#E6E6FA',
-        fontSize: 14,
+    mainTitleCentered: {
+        color: '#FFFFFF',
+        fontSize: 22,
         fontFamily: FONT_BOLD,
-        backgroundColor: 'rgba(255,255,255,0.04)',
-        padding: 10,
-        borderRadius: 8,
         textAlign: 'center',
-        marginTop: 6,
+        lineHeight: 28,
     },
-    superDropdownButton: {
-        marginTop: 14,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        paddingVertical: 8,
-        borderRadius: 8,
-        alignItems: 'center',
+
+    // ESTILOS GRID Y TARJETAS NEUTRAS
+    gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
+    fullWidthCard: { width: '100%', height: 85, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', marginBottom: 4 },
+    squareCard: { width: '47.5%', aspectRatio: 1, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' },
+    cardInnerCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    cardText: { fontFamily: FONT_BOLD, fontSize: 12, letterSpacing: 1.5, textAlign: 'center', color: '#FFFFFF' },
+
+    // ============================================
+    // 🎨 COMPONENTES ABSTRACTOS RENOVADOS
+    // ============================================
+
+    // 🌟 NUEVO: TRIÁNGULO GEOMÉTRICO (Adiós puntos)
+    abstractVisualTriangle: {
+        width: 0,
+        height: 0,
+        backgroundColor: 'transparent',
+        borderStyle: 'solid',
+        borderLeftWidth: 15,
+        borderRightWidth: 15,
+        borderBottomWidth: 26,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        // borderBottomColor se define dinámicamente en el JSX
+        marginRight: 15, // Separación con el texto
     },
-    superDropdownButtonText: {
-        color: 'white',
-        fontFamily: FONT_BOLD,
-        fontSize: 12,
+    // Estilo base para el JSX
+    triangleShape: {
+        position: 'absolute',
+        top: -13, // Ajuste para centrarlo visualmente en la fila
+        left: -15,
+        width: 0,
+        height: 0,
+        backgroundColor: 'transparent',
+        borderStyle: 'solid',
+        borderLeftWidth: 15,
+        borderRightWidth: 15,
+        borderBottomWidth: 26,
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
     },
-    superContainer: {
-        backgroundColor: 'rgba(0,0,0,0.2)',
-        borderRadius: 8,
-        padding: 12,
-        marginTop: 10,
-    },
-    superCategoryBlock: {
-        marginBottom: 8,
-    },
-    superCategoryTitle: {
-        color: '#FFD700',
-        fontSize: 11,
-        fontFamily: FONT_BOLD,
-        marginBottom: 2,
-    },
-    superCategoryItems: {
-        color: '#BBBBBB',
-        fontSize: 13,
-        fontFamily: FONT_REGULAR,
-    }
+
+    // Resto de visuales abstractos (se mantienen)
+    abstractVisual: { marginBottom: 16, height: 26, justifyContent: 'center', alignItems: 'center' },
+    circleShape: { width: 26, height: 26, borderRadius: 13 },
+    ringShape: { width: 26, height: 26, borderRadius: 13, borderWidth: 2.5 },
+    abstractVisualEnergy: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height: 32, gap: 5, marginBottom: 14 },
+    energyBar: { width: 5, borderRadius: 3 },
+    abstractVisualGrid: { width: 26, height: 26, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignContent: 'space-between', marginBottom: 16 },
+    gridBlock: { width: 11, height: 11, borderRadius: 3 },
+    gridBlockOutline: { width: 11, height: 11, borderRadius: 3, borderWidth: 2, backgroundColor: 'transparent' },
+
+    // ESTILOS MODAL (Sin cambios)
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(10, 10, 15, 0.94)', justifyContent: 'flex-end' },
+    modalSheet: { backgroundColor: '#151522', borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', paddingHorizontal: 24, paddingTop: 55, paddingBottom: 40, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.04)' },
+    closeButton: { position: 'absolute', top: 20, right: 20, backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 8, borderRadius: 20, zIndex: 10 },
+    modalScroll: { paddingBottom: 20 },
+    modalMainTitle: { fontSize: 22, fontFamily: FONT_BOLD, marginBottom: 20, letterSpacing: 0.5 },
+    infoBlock: { marginBottom: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+    infoBlockTitle: { fontSize: 16, fontFamily: FONT_BOLD, color: 'white', marginBottom: 6 },
+    paragraphText: { fontSize: 15, fontFamily: FONT_REGULAR, color: '#D2D2DC', lineHeight: 22, marginBottom: 15 },
+    sectionBulletHeader: { fontSize: 14, fontFamily: FONT_BOLD, color: 'white', marginTop: 12, marginBottom: 8 },
+    bulletItemText: { fontSize: 14, fontFamily: FONT_REGULAR, color: '#9E9EAA', lineHeight: 20, marginBottom: 6 },
+    tagContainer: { backgroundColor: 'rgba(255,255,255,0.01)', padding: 14, borderRadius: 12, borderWidth: 1, marginTop: 5 },
+    tagText: { fontSize: 13, fontFamily: FONT_BOLD, textAlign: 'center', lineHeight: 18 },
+    superContainerInside: { backgroundColor: 'rgba(0, 0, 0, 0.15)', borderRadius: 14, padding: 16, marginTop: 15 },
+    superCategoryLabel: { fontSize: 11, fontFamily: FONT_BOLD, marginBottom: 3, letterSpacing: 0.5 },
+    superCategoryContent: { color: '#B2B2C2', fontSize: 13, fontFamily: FONT_REGULAR, lineHeight: 18 }
 });
